@@ -106,15 +106,30 @@ export function killerCount(players: number): number {
   return Math.max(1, nearestRounded);
 }
 
-/** Default scheduled-vote times (minutes from a 9 AM start) for a long round. */
-function defaultVoteTimes(dayLengthMin: number): number[] {
-  // §16.1 anchors: ~11:30, 14:30, 17:30, 20:00, 22:00 → 150/330/510/660/780 min.
-  // Scale proportionally to the chosen day length (baseline D = 780).
+/**
+ * Number of scheduled votes (§16.2: "scale with N and day length; ≥4; ~5 for a
+ * long 7-player round"). Town needs roughly enough catch-attempts to out-vote
+ * the killers, so we scale with K: votes = max(4, 2K+1). 7→5, 11→7, 15→9, 22→13.
+ * Two votes is far too few — the single biggest v1 balance error (§6).
+ */
+export function scheduledVoteCount(players: number): number {
+  return Math.max(4, 2 * killerCount(players) + 1);
+}
+
+/** Default scheduled-vote times (minutes from a 9 AM start). */
+function defaultVoteTimes(dayLengthMin: number, count: number): number[] {
   const baseline = 780;
-  const anchors = [150, 330, 510, 660, 780];
-  if (dayLengthMin === baseline) return anchors;
-  const scale = dayLengthMin / baseline;
-  return anchors.map((m) => Math.round(m * scale));
+  // Preserve the tuned §16.1 meal-time anchors for the canonical 5-vote round.
+  if (count === 5) {
+    const anchors = [150, 330, 510, 660, 780];
+    const scale = dayLengthMin / baseline;
+    return anchors.map((m) => Math.round(m * scale));
+  }
+  // Otherwise spread `count` votes evenly from the late morning to the finale.
+  const first = Math.round((150 / baseline) * dayLengthMin);
+  if (count <= 1) return [dayLengthMin];
+  const step = (dayLengthMin - first) / (count - 1);
+  return Array.from({ length: count }, (_, i) => Math.round(first + i * step));
 }
 
 export interface DeriveConfigInput {
@@ -160,7 +175,7 @@ export function deriveConfig(input: DeriveConfigInput): GameConfig {
     maxMoves: 2,
     killExpiryMin: 25,
 
-    voteTimesMin: defaultVoteTimes(dayLengthMin),
+    voteTimesMin: defaultVoteTimes(dayLengthMin, scheduledVoteCount(players)),
     emergencyVote: false,
     tieResolution: "random",
 
