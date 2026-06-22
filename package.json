@@ -1,0 +1,27 @@
+{
+  "name": "all-day-social-deduction-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend for an all-day social-deduction party game (engine, simulation harness, AI Director, task-deck generator, service layer). No frontend.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sim": "tsx src/sim/cli.ts",
+    "deck:generate": "tsx src/deck/cli.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
