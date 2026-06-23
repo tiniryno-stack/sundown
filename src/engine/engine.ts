@@ -43,6 +43,12 @@ export interface CreateGameInput {
   roster: PlayerSeed[];
 }
 
+/** Serialized engine: plain state + RNG position (for persistence). */
+export interface EngineSnapshot {
+  state: GameState;
+  rngState: number;
+}
+
 let effectCounter = 0;
 
 export class GameEngine {
@@ -77,6 +83,24 @@ export class GameEngine {
       result: null,
     };
     this.assignRoles(roster);
+  }
+
+  /**
+   * Serialize the full engine (state + RNG position) to a plain JSON-safe blob
+   * for persistence. `hydrate` reconstructs an identical, deterministic engine.
+   */
+  serialize(): EngineSnapshot {
+    return { state: this.state, rngState: this.rng.getState() };
+  }
+
+  /** Reconstruct an engine from a serialized snapshot (no role re-assignment). */
+  static hydrate(snapshot: EngineSnapshot): GameEngine {
+    const e: GameEngine = Object.create(GameEngine.prototype);
+    (e as { state: GameState }).state = snapshot.state;
+    const rng = new RNG(snapshot.state.seed);
+    rng.setState(snapshot.rngState);
+    (e as unknown as { rng: RNG }).rng = rng;
+    return e;
   }
 
   // ---------------------------------------------------------------------------

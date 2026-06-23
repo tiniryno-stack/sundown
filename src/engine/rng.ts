@@ -69,4 +69,14 @@ export class RNG {
   fork(label: string): RNG {
     return new RNG(`${this.seed}:${label}:${this.state}`);
   }
+
+  /** Current internal state (for persistence/rehydration). */
+  getState(): number {
+    return this.state;
+  }
+
+  /** Restore internal state captured by getState (for persistence). */
+  setState(state: number): void {
+    this.state = state >>> 0;
+  }
 }

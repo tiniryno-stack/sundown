@@ -58,6 +58,9 @@ export interface GameConfig {
   emergencyVote: boolean; // none in v1 (§6)
   tieResolution: TieResolution;
 
+  /** Per-task per-player cooldown in minutes (§7.3, ~30–45). */
+  taskCooldownMin: number;
+
   // --- powered roles (§11) ---
   roles: RoleFlags;
   /** Group-task points banked → 1 investigation (Cop fuel, §7.5/§11). */
@@ -178,6 +181,7 @@ export function deriveConfig(input: DeriveConfigInput): GameConfig {
     voteTimesMin: defaultVoteTimes(dayLengthMin, scheduledVoteCount(players)),
     emergencyVote: false,
     tieResolution: "random",
+    taskCooldownMin: 35,
 
     roles,
     investigationCost: 12,
