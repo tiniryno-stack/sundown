@@ -1,0 +1,62 @@
+{
+  "gameId": "g_6cae1fd9",
+  "phase": "lobby",
+  "roundIndex": 0,
+  "nowMinute": 0,
+  "finaleMinute": 780,
+  "you": {
+    "id": "p_abcaecbe",
+    "name": "Alice",
+    "role": "townsperson",
+    "team": "town",
+    "alive": true,
+    "isGhost": false
+  },
+  "bar": "unknown",
+  "livingCount": 7,
+  "players": [
+    {
+      "id": "p_abcaecbe",
+      "name": "Alice",
+      "alive": true
+    },
+    {
+      "id": "p_54fb4b29",
+      "name": "Bob",
+      "alive": true
+    },
+    {
+      "id": "p_0882b207",
+      "name": "Cara",
+      "alive": true
+    },
+    {
+      "id": "p_ee7e4561",
+      "name": "Dave",
+      "alive": true
+    },
+    {
+      "id": "p_fe908fdd",
+      "name": "Eve",
+      "alive": true
+    },
+    {
+      "id": "p_a4998377",
+      "name": "Finn",
+      "alive": true
+    },
+    {
+      "id": "p_a2291120",
+      "name": "Gwen",
+      "alive": true
+    }
+  ],
+  "events": [],
+  "vote": {
+    "open": false,
+    "index": null,
+    "closesAtMinute": null,
+    "youVoted": false
+  },
+  "result": null
+}

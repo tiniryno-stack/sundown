@@ -113,6 +113,39 @@ describe("GameService — privacy projection (spec invariants)", () => {
   });
 });
 
+describe("GameService — lobby state & task deck", () => {
+  it("returns a lobby PlayerView before the round starts (no crash)", async () => {
+    const env = setup();
+    const { gameId, players } = await lobbyOf(env.svc, 7);
+    const view = (await env.svc.getState(gameId, players[0]!.playerId, players[0]!.token)) as PlayerView;
+    expect(view.phase).toBe("lobby");
+    expect(view.players).toHaveLength(7);
+    expect(view.bar).toBe("unknown");
+  });
+
+  it("serves the task deck with per-player cooldowns", async () => {
+    const env = setup();
+    const { gameId, players } = await lobbyOf(env.svc, 7);
+    await env.svc.startRound(gameId, "host");
+    const res = (await env.svc.getTasks(gameId, players[0]!.playerId, players[0]!.token)) as {
+      tasks: { id: string; availableAtMinute: number }[];
+      nowMinute: number;
+    };
+    expect(res.tasks.length).toBeGreaterThan(10);
+    expect(res.tasks.every((t) => t.availableAtMinute === 0)).toBe(true);
+
+    // After completing a task, its cooldown shows up.
+    const rec = (await env.store.load(gameId))!;
+    env.setMinute(10, rec.startedAtMs);
+    const taskId = rec.deck![0]!.id;
+    await env.svc.completeTask(gameId, players[0]!.playerId, players[0]!.token, taskId);
+    const after = (await env.svc.getTasks(gameId, players[0]!.playerId, players[0]!.token)) as {
+      tasks: { id: string; availableAtMinute: number }[];
+    };
+    expect(after.tasks.find((t) => t.id === taskId)!.availableAtMinute).toBeGreaterThan(10);
+  });
+});
+
 describe("GameService — task completion + cooldown (§7.3)", () => {
   it("accepts a task, then blocks repeats until the cooldown elapses", async () => {
     const env = setup();

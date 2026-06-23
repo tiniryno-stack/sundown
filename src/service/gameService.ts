@@ -182,9 +182,54 @@ export class GameService {
     const record = await this.load(gameId);
     if (!record) return fail("unknown game");
     if (!this.auth(record, playerId, token)) return fail("bad credentials");
+    if (record.phase === "lobby" || !record.engine) return this.projectLobby(record, playerId);
     const engine = this.syncedEngine(record);
     await this.store.save(gameId, record);
     return this.projectFor(record, engine, playerId);
+  }
+
+  /** Lobby projection (no engine yet): roster + waiting state for the lobby screen. */
+  private projectLobby(record: ServiceGameRecord, playerId: string): PlayerView {
+    return {
+      gameId: record.id,
+      phase: "lobby",
+      roundIndex: record.roundIndex,
+      nowMinute: 0,
+      finaleMinute: record.config.finaleMin,
+      you: {
+        id: playerId,
+        name: record.roster.find((r) => r.id === playerId)?.name ?? "?",
+        role: "townsperson", // not yet assigned — meaningful only once started
+        team: "town",
+        alive: true,
+        isGhost: false,
+      },
+      bar: "unknown",
+      livingCount: record.roster.length,
+      players: record.roster.map((r) => ({ id: r.id, name: r.name, alive: true })),
+      events: [],
+      vote: { open: false, index: null, closesAtMinute: null, youVoted: false },
+      result: null,
+    };
+  }
+
+  /**
+   * The task deck for this round + this player's per-task cooldown state (§7.3).
+   * The deck is shared and portable; `availableAtMinute` is when each task can be
+   * tapped again (0 = available now). The same prompt being doable by anyone is
+   * the camouflage that hides killers in the crowd (§7.1).
+   */
+  async getTasks(
+    gameId: string,
+    playerId: string,
+    token: string,
+  ): Promise<{ tasks: (Task & { availableAtMinute: number })[]; nowMinute: number } | ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    if (!this.auth(record, playerId, token)) return fail("bad credentials");
+    const cds = record.cooldowns[playerId] ?? {};
+    const tasks = (record.deck ?? []).map((t) => ({ ...t, availableAtMinute: cds[t.id] ?? 0 }));
+    return { tasks, nowMinute: this.nowMinute(record) };
   }
 
   // ===========================================================================

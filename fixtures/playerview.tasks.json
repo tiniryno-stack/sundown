@@ -1,0 +1,313 @@
+{
+  "tasks": [
+    {
+      "id": "t0",
+      "prompt": "Take a selfie with someone you haven't talked to yet today",
+      "tier": "light",
+      "points": 1,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t1",
+      "prompt": "Get a cheers going with at least two people",
+      "tier": "light",
+      "points": 1,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t2",
+      "prompt": "Give an honest compliment to someone",
+      "tier": "light",
+      "points": 1,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t3",
+      "prompt": "Sip your drink every time someone says a name",
+      "tier": "light",
+      "points": 1,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t4",
+      "prompt": "Teach someone a one-line joke and make them laugh",
+      "tier": "light",
+      "points": 1,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t5",
+      "prompt": "Swap seats with someone and learn one new fact about them",
+      "tier": "light",
+      "points": 1,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t6",
+      "prompt": "Start a slow clap that at least one other person joins",
+      "tier": "light",
+      "points": 1,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t7",
+      "prompt": "Covertly mirror someone's posture for two minutes",
+      "tier": "light",
+      "points": 1,
+      "kind": "covert",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t8",
+      "prompt": "Get someone to high-five you without asking directly",
+      "tier": "light",
+      "points": 1,
+      "kind": "covert",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t9",
+      "prompt": "Toast to the host and take a sip",
+      "tier": "light",
+      "points": 1,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t12",
+      "prompt": "Take a shot with someone",
+      "tier": "standard",
+      "points": 2,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t13",
+      "prompt": "Start a toast that the whole table joins",
+      "tier": "standard",
+      "points": 2,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t14",
+      "prompt": "Covertly get someone to refill your drink for you",
+      "tier": "standard",
+      "points": 2,
+      "kind": "covert",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t15",
+      "prompt": "Convince someone to swap drinks with you for a round",
+      "tier": "standard",
+      "points": 2,
+      "kind": "covert",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t16",
+      "prompt": "Lead a two-truths-and-a-lie round with three people",
+      "tier": "standard",
+      "points": 2,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t17",
+      "prompt": "Get the group to do a synchronized cheers",
+      "tier": "standard",
+      "points": 2,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t18",
+      "prompt": "Start a quick game of rock-paper-scissors, loser sips",
+      "tier": "standard",
+      "points": 2,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t19",
+      "prompt": "Covertly plant a silly phrase and get someone to repeat it",
+      "tier": "standard",
+      "points": 2,
+      "kind": "covert",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t20",
+      "prompt": "Tell a 30-second story about how you met someone here",
+      "tier": "standard",
+      "points": 2,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t21",
+      "prompt": "Get someone to teach you their signature dance move",
+      "tier": "standard",
+      "points": 2,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t22",
+      "prompt": "Run a quick 'never have I ever' with three people",
+      "tier": "standard",
+      "points": 2,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t26",
+      "prompt": "Shotgun a beer (or a sparkling water) with a buddy",
+      "tier": "heavy",
+      "points": 3,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t27",
+      "prompt": "Invent a fake house rule and get someone to follow it",
+      "tier": "heavy",
+      "points": 3,
+      "kind": "covert",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t28",
+      "prompt": "Give a heartfelt 60-second toast to the group",
+      "tier": "heavy",
+      "points": 3,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t29",
+      "prompt": "Get three different people to do a dare you make up",
+      "tier": "heavy",
+      "points": 3,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t30",
+      "prompt": "Covertly get someone to say a secret word you chose",
+      "tier": "heavy",
+      "points": 3,
+      "kind": "covert",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t31",
+      "prompt": "Lead the group in a one-minute chant",
+      "tier": "heavy",
+      "points": 3,
+      "kind": "social",
+      "group": false,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    },
+    {
+      "id": "t34",
+      "prompt": "Organize a group round of shots",
+      "tier": "group",
+      "points": 4,
+      "kind": "social",
+      "group": true,
+      "intensitySwap": "Use a non-alcoholic drink or just mime the sip — totally fine.",
+      "source": "ai",
+      "availableAtMinute": 0
+    }
+  ],
+  "nowMinute": 30
+}

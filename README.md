@@ -100,10 +100,19 @@ src/
   deck/          Anthropic-backed task-deck generator (§7.2) + mock
   service/       GameService application layer (maps to API.md)
   persistence/   Store interface + InMemory + File adapters
-game-spec.md     design source of truth
-API.md           frontend-facing contract
-PROGRESS.md      build status, results, decisions, and what's left
+game-spec.md       design source of truth
+API.md             frontend-facing wire contract
+FRONTEND_BRIEF.md  design handoff for Claude Design (screens, vibe, rules)
+fixtures/          real sample PlayerView payloads, one per UI state
+PROGRESS.md        build status, results, decisions, and what's left
 ```
+
+## Frontend handoff
+
+The frontend (player app) is built separately. Everything a designer needs is in
+**`FRONTEND_BRIEF.md`** (screens, flows, the vibe, hard rules) + **`API.md`** (the
+wire contract) + **`fixtures/`** (real sample payloads to build against, no backend
+required). Regenerate fixtures any time with `npm run fixtures`.
 
 ## Notes
 

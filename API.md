@@ -106,6 +106,18 @@ PlayerView: {
 
 ---
 
+### `getTasks(gameId, playerId, token) → { tasks, nowMinute }`
+`GET /games/:id/tasks` — The shared task deck for this round plus this player's
+cooldown state. Fetch once on join and re-fetch after completing a task (or
+periodically). The same prompts are doable by everyone — that's the camouflage (§7.1).
+```ts
+tasks: { id; prompt; tier: "light"|"standard"|"heavy"|"group"; points; kind: "social"|"covert";
+         group: boolean; intensitySwap: string; requiresProp?: string;
+         availableAtMinute: number /* 0 = available now; else cooldown end */ }[]
+```
+
+---
+
 ## Actions (player)
 
 ### `completeTask(gameId, playerId, token, taskId) → { ok, error?, cooldownUntilMinute? }`

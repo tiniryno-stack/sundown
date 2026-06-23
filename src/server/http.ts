@@ -100,6 +100,8 @@ async function dispatch(service: GameService, gameId: string, sub: string, ctx: 
       return service.getResult(gameId);
     case "GET state":
       return service.getState(gameId, pid(), tok());
+    case "GET tasks":
+      return service.getTasks(gameId, pid(), tok());
     case "POST tasks/complete":
       return service.completeTask(gameId, pid(), tok(), String(ctx.body.taskId ?? ""));
     case "POST vote":

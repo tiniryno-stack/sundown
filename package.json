@@ -15,7 +15,8 @@
     "sim": "tsx src/sim/cli.ts",
     "deck:generate": "tsx src/deck/cli.ts",
     "serve": "tsx src/server/index.ts",
-    "watch": "tsx src/sim/watch.ts"
+    "watch": "tsx src/sim/watch.ts",
+    "fixtures": "tsx src/tools/fixtures.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0"
