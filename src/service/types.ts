@@ -98,7 +98,7 @@ export interface PlayerView {
   result: GameResult | null;
 }
 
-export interface CreateGameInput {
+export interface CreateGameRequest {
   hostId: string;
   players: number;
   dayLengthMin?: number;

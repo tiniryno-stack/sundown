@@ -25,7 +25,7 @@ import type {
   ActionResult,
   BarStatus,
   CompleteTaskResult,
-  CreateGameInput,
+  CreateGameRequest,
   KillContext,
   PlayerView,
   ServiceGameRecord,
@@ -60,7 +60,7 @@ export class GameService {
   // Lobby / lifecycle
   // ===========================================================================
 
-  async createGame(input: CreateGameInput): Promise<{ gameId: string }> {
+  async createGame(input: CreateGameRequest): Promise<{ gameId: string }> {
     const config = deriveConfig({
       players: input.players,
       dayLengthMin: input.dayLengthMin,
