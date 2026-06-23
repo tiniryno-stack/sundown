@@ -36,6 +36,12 @@ const VOTE_WINDOW_MIN = 20; // voting opens this long before a scheduled vote (Â
 export interface GameServiceOptions {
   /** Epoch-ms clock (injectable for deterministic tests). */
   now?: () => number;
+  /**
+   * Game-minutes that elapse per real-world minute (default 1 = real time).
+   * Set >1 for testing to compress the all-day timeline (e.g. 60 â†’ a full
+   * ~13-hour day resolves in ~13 real minutes). Production uses 1.
+   */
+  timeScale?: number;
   /** LLM client for deck generation (falls back to a deterministic mock). */
   deckClient?: LLMClient;
   /** LLM client for the Director (falls back to the heuristic mock). */
@@ -44,6 +50,7 @@ export interface GameServiceOptions {
 
 export class GameService {
   private readonly now: () => number;
+  private readonly timeScale: number;
   private readonly deckClient: LLMClient;
   private readonly directorClient: LLMClient;
 
@@ -52,8 +59,14 @@ export class GameService {
     opts: GameServiceOptions = {},
   ) {
     this.now = opts.now ?? (() => Date.now());
+    this.timeScale = opts.timeScale && opts.timeScale > 0 ? opts.timeScale : 1;
     this.deckClient = opts.deckClient ?? createLLMClient() ?? makeMockDeckClient();
     this.directorClient = opts.directorClient ?? createLLMClient() ?? makeMockDirectorClient();
+  }
+
+  /** Active game ids (for host-side schedulers like the Director loop). */
+  async listGames(): Promise<string[]> {
+    return this.store.list();
   }
 
   // ===========================================================================
@@ -289,7 +302,7 @@ export class GameService {
 
   private nowMinute(record: ServiceGameRecord): number {
     if (record.startedAtMs === 0) return 0;
-    return Math.max(0, Math.floor((this.now() - record.startedAtMs) / 60000));
+    return Math.max(0, Math.floor(((this.now() - record.startedAtMs) / 60000) * this.timeScale));
   }
 
   /** Hydrate the engine and sync it to the wall clock: resolve due votes, apply effects. */

@@ -47,6 +47,33 @@ npm run sim -- --games 4000       # more samples
 npm run sim -- --players 22       # the marathon format
 
 npm run deck:generate             # generate a sample task deck (offline mock)
+
+npm run serve                     # start the HTTP server (API.md) on :3000
+```
+
+### Running the server for a real/Claude-Design-frontend test
+
+```bash
+npm run serve
+# env knobs:
+#   PORT=3000                  port
+#   TIME_SCALE=60              compress the all-day timeline (60 => a full ~13h
+#                              day resolves in ~13 real minutes) — great for testing
+#   STORE=file|memory          file (default, durable under data/games) or memory
+#   DIRECTOR_INTERVAL_SEC=600  auto-run the AI Director on a cadence (§15.6)
+```
+
+The server is **stateful and authoritative** — phones are thin clients that poll
+`GET /games/:id/state`; closing/reopening the app loses nothing. For a quick test
+with real phones, run locally and expose it with a tunnel (e.g. `ngrok http 3000`),
+or deploy the Node process to any small host (Railway / Render / Fly.io / a $5 VPS).
+Example flow:
+
+```bash
+curl -s http://localhost:3000/health
+curl -s -X POST http://localhost:3000/games -H 'Content-Type: application/json' \
+  -d '{"hostId":"host","players":7}'
+# → {"gameId":"g_xxxx"}  then POST /games/:id/join, /start, GET /state?playerId=&token=
 ```
 
 ### Using a real Anthropic key (optional)
