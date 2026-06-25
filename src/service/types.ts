@@ -120,3 +120,34 @@ export interface KillContext {
   /** Anonymous, current-only suggestions from other unlocked killers (§9). */
   suggestions: string[];
 }
+
+/** Omniscient host-only view — NEVER sent to players. */
+export interface HostView {
+  gameId: string;
+  phase: "lobby" | "active" | "resolved";
+  players: {
+    id: string;
+    name: string;
+    alive: boolean;
+    role: string;
+    team: string;
+    meterPoints?: number;
+    canKillNow?: boolean;
+  }[];
+  /** Exact 0–100 bar value (not banded). */
+  bar: number;
+  barBand: BarStatus;
+  livingCount: number;
+  killerCount: number;
+  townCount: number;
+  nowMinute: number;
+  finaleMinute: number;
+  vote: {
+    open: boolean;
+    index: number | null;
+    closesAtMinute: number | null;
+    totalVotes: number;
+    totalEligible: number;
+  };
+  result: { winner: string; reason: string; at: number } | null;
+}

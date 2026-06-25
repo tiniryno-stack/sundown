@@ -26,6 +26,7 @@ import type {
   BarStatus,
   CompleteTaskResult,
   CreateGameRequest,
+  HostView,
   KillContext,
   PlayerView,
   ServiceGameRecord,
@@ -323,6 +324,98 @@ export class GameService {
     return {
       canKillNow: me.alive && me.meterPoints >= record.config.killCost,
       suggestions: engine.currentSuggestions(playerId, raw),
+    };
+  }
+
+  // ===========================================================================
+  // Host: omniscient state (host dashboard)
+  // ===========================================================================
+
+  async getHostState(gameId: string, hostId: string): Promise<HostView | ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    if (record.hostId !== hostId) return fail("not the host");
+
+    const m = this.nowMinute(record);
+
+    // Lobby: no engine yet — return roster with placeholder role/team.
+    if (record.phase === "lobby" || !record.engine) {
+      return {
+        gameId: record.id,
+        phase: "lobby",
+        players: record.roster.map((r) => ({
+          id: r.id,
+          name: r.name,
+          alive: true,
+          role: "townsperson",
+          team: "town",
+        })),
+        bar: 100,
+        barBand: "healthy",
+        livingCount: record.roster.length,
+        killerCount: 0,
+        townCount: record.roster.length,
+        nowMinute: 0,
+        finaleMinute: record.config.finaleMin,
+        vote: { open: false, index: null, closesAtMinute: null, totalVotes: 0, totalEligible: 0 },
+        result: null,
+      };
+    }
+
+    const engine = this.syncedEngine(record);
+    await this.store.save(gameId, record);
+
+    const s = engine.state;
+    const active = activeVoteIndex(record, m);
+
+    const players = s.players.map((p) => {
+      const entry: HostView["players"][number] = {
+        id: p.id,
+        name: record.roster.find((r) => r.id === p.id)?.name ?? p.name,
+        alive: p.alive,
+        role: p.role,
+        team: p.team,
+      };
+      if (p.team === "killer") {
+        entry.meterPoints = p.meterPoints;
+        entry.canKillNow = p.alive && p.meterPoints >= record.config.killCost;
+      }
+      return entry;
+    });
+
+    const living = s.players.filter((p) => p.alive);
+    const livingKillers = living.filter((p) => p.team === "killer");
+    const livingTown = living.filter((p) => p.team === "town");
+
+    const bar = record.phase === "active" ? s.townBar : (record.results[record.results.length - 1] ? 0 : 100);
+
+    let totalVotes = 0;
+    let totalEligible = 0;
+    if (active !== null) {
+      const ballotForIndex = record.ballots[active] ?? {};
+      totalVotes = Object.keys(ballotForIndex).length;
+      totalEligible = living.length;
+    }
+
+    return {
+      gameId: record.id,
+      phase: record.phase,
+      players,
+      bar,
+      barBand: bandBar(record.phase === "active" ? s.townBar : null),
+      livingCount: living.length,
+      killerCount: livingKillers.length,
+      townCount: livingTown.length,
+      nowMinute: m,
+      finaleMinute: record.config.finaleMin,
+      vote: {
+        open: active !== null,
+        index: active,
+        closesAtMinute: active !== null ? record.config.voteTimesMin[active]! : null,
+        totalVotes,
+        totalEligible,
+      },
+      result: s.result,
     };
   }
 

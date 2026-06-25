@@ -116,6 +116,8 @@ async function dispatch(service: GameService, gameId: string, sub: string, ctx: 
       return service.getKillContext(gameId, pid(), tok());
     case "POST director/tick":
       return service.runDirectorTick(gameId, host());
+    case "GET host-state":
+      return service.getHostState(gameId, host());
     default:
       return undefined;
   }
