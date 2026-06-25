@@ -31,9 +31,11 @@ export function usePlayerView(identity: Identity | null): PlayerViewState {
       setView(v);
       setError(null);
     } catch (e) {
-      // Bad credentials means this identity is stale (game reset, etc.).
-      if (e instanceof ApiError && /credential/i.test(e.message)) {
-        setError("bad credentials");
+      // A stale identity — bad creds OR a game that no longer exists (server
+      // redeploy wiped it) — should bounce the player back to Join rather than
+      // getting stuck forever on "Can't reach the table".
+      if (e instanceof ApiError && /credential|unknown game/i.test(e.message)) {
+        setError("stale identity");
       } else {
         setError(e instanceof Error ? e.message : "network error");
       }

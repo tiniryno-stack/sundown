@@ -312,9 +312,9 @@ function LiveApp() {
     return () => { alive = false; };
   }, [identity, view?.you.killer, view?.you.isGhost, view?.nowMinute]);
 
-  // Stale credentials → clear identity and return to Join.
+  // Stale identity (bad creds or a wiped game) → clear it and return to Join.
   useEffect(() => {
-    if (error === "bad credentials") {
+    if (error === "stale identity") {
       store.clearIdentity();
       setIdentity(null);
     }
