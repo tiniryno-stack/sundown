@@ -98,6 +98,14 @@ export function JoinScreen({
         <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", fontSize: 13, color: "var(--ink-faint)" }}>
           <Icon.eye s={15} /><span>No app, no account — just your name and the code.</span>
         </div>
+
+        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 16, textAlign: "center" }}>
+          <a href="?host" style={{ fontSize: 13, color: "var(--ink-faint)", textDecoration: "none",
+            display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+            <Icon.person s={15} />
+            Hosting today? Open the control room →
+          </a>
+        </div>
       </div>
     </div>
   );

@@ -23,6 +23,7 @@ import {
 import {
   CopScreen, GameOverScreen, GhostScreen, KillerScreen, MedicScreen,
 } from "./screens/cold";
+import { HostApp } from "./screens/host";
 
 /* ── theme ── */
 function useTheme(): ["light" | "dark", () => void] {
@@ -428,9 +429,10 @@ function LiveApp() {
   );
 }
 
-/* ── entry: pick demo vs live from the URL ── */
+/* ── entry: pick demo vs host vs live from the URL ── */
 export default function App() {
   const q = new URLSearchParams(window.location.search);
+  if (q.has("host")) return <HostApp />;
   const demo = q.has("demo") || q.has("role") || q.has("phase") || q.has("bar");
   if (demo) {
     return (

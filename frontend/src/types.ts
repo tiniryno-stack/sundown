@@ -85,6 +85,41 @@ export type KillContext = { canKillNow: boolean; suggestions: string[] };
 
 export type ActionResult = { ok: boolean; error?: string; cooldownUntilMinute?: number };
 
+export type HostPlayer = {
+  id: string;
+  name: string;
+  alive: boolean;
+  role: string;
+  team: string;
+  meterPoints?: number;
+  canKillNow?: boolean;
+};
+
+export type HostView = {
+  gameId: string;
+  phase: "lobby" | "active" | "resolved";
+  players: HostPlayer[];
+  bar: number;
+  barBand: Band;
+  livingCount: number;
+  killerCount: number;
+  townCount: number;
+  nowMinute: number;
+  finaleMinute: number;
+  killCost: number;
+  maxMoves: number;
+  moveCharges: number;
+  voteTimesMin: number[];
+  vote: {
+    open: boolean;
+    index: number | null;
+    closesAtMinute: number | null;
+    totalVotes: number;
+    totalEligible: number;
+  };
+  result: { winner: string; reason: string; at: number } | null;
+};
+
 /* Identity stored on-device after join. */
 export type Identity = {
   gameId: string;

@@ -142,6 +142,10 @@ export interface HostView {
   townCount: number;
   nowMinute: number;
   finaleMinute: number;
+  killCost: number;
+  maxMoves: number;
+  moveCharges: number;
+  voteTimesMin: number[];
   vote: {
     open: boolean;
     index: number | null;

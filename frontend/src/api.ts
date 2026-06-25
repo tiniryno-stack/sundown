@@ -3,7 +3,7 @@
    (playerId, token) and host creds (hostId) ride along on every relevant call. */
 
 import type {
-  ActionResult, GameResult, KillContext, PlayerView, TasksResponse,
+  ActionResult, GameResult, HostView, KillContext, PlayerView, TasksResponse,
 } from "./types";
 
 const BASE: string =
@@ -65,6 +65,9 @@ export const api = {
     post<ActionResult>(`/games/${gameId}/next-round`, { hostId }),
 
   getResult: (gameId: string) => get<GameResult | null>(`/games/${gameId}/result`),
+
+  getHostState: (gameId: string, hostId: string) =>
+    get<HostView>(`/games/${gameId}/host-state`, { hostId }),
 
   // ── Player state ────────────────────────────────────────────────
   getState: (gameId: string, playerId: string, token: string) =>
