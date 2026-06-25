@@ -1,6 +1,9 @@
 [build]
 builder = "NIXPACKS"
 
+[build.variables]
+NIXPACKS_NODE_ENV = "development"
+
 [deploy]
 startCommand = "npm run serve"
 healthcheckPath = "/health"
