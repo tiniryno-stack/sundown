@@ -13,7 +13,7 @@ import {
 
 /* ── JOIN ── a code + your name, then you're at the table ── */
 function CodeInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const slots = 8;
+  const slots = 6;
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const chars = value.padEnd(slots, " ").slice(0, slots).split("");
   const setAt = (i: number, ch: string) => {
@@ -46,7 +46,7 @@ function CodeInput({ value, onChange }: { value: string; onChange: (v: string) =
 }
 
 export function JoinScreen({
-  temp, initialCode = "", busy, error, onJoin,
+  temp, initialCode = "SUN", busy, error, onJoin,
 }: {
   temp?: "cold" | "warm";
   initialCode?: string;
@@ -56,7 +56,7 @@ export function JoinScreen({
 }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState(initialCode);
-  const ready = name.trim().length > 0 && code.replace(/\s/g, "").length >= 8 && !busy;
+  const ready = name.trim().length > 0 && code.replace(/\s/g, "").length >= 6 && !busy;
   return (
     <div className="sd-screen sd-scroll">
       <SkyHeader view={{ nowMinute: 0, finaleMinute: 780 }} temp={temp}>
@@ -74,7 +74,7 @@ export function JoinScreen({
           <div className="sd-eyebrow" style={{ marginBottom: 12 }}>Game code</div>
           <CodeInput value={code} onChange={setCode} />
           <div style={{ fontSize: 13, color: "var(--ink-faint)", marginTop: 12 }}>
-            Find the 8-character code on the host's screen.
+            Find it on the host's screen — it starts with <strong style={{ color: "var(--ink-soft)" }}>SUN</strong>.
           </div>
         </Card>
 
@@ -104,7 +104,7 @@ export function JoinScreen({
 
 /* ── LOBBY ── */
 function gameCode(gameId: string): string {
-  return gameId.replace("g_", "").toUpperCase();
+  return "SUN-" + gameId.replace("g_", "").slice(0, 3).toUpperCase();
 }
 
 export function LobbyScreen({
