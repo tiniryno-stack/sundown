@@ -2,8 +2,9 @@
    Ported from the design prototype (sd-cozy.jsx), typed and decoupled from the
    prototype's window.SD globals — data + actions now arrive as props. */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from "react";
 import type { PlayerView, Task, Tier } from "../types";
+import { store } from "../storage";
 import { INTENSITY_SWAP, drawTask } from "../constants";
 import {
   Button, Card, EventFeed, HudReadout, Icon, LivingMini, MoodHero, Pill,
@@ -450,9 +451,19 @@ export function TasksScreen({
   const [extra, setExtra] = useState<Task[]>([]);
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
-  const [archive, setArchive] = useState<ArchiveItem[]>([]);
+  const [archive, setArchive] = useState<ArchiveItem[]>(() =>
+    store.getArchive(view.gameId, view.you.id) as ArchiveItem[]
+  );
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [proofTask, setProofTask] = useState<Task | null>(null);
+
+  const addToArchive = useCallback((item: ArchiveItem) => {
+    setArchive((a) => {
+      const next = [item, ...a];
+      store.setArchive(view.gameId, view.you.id, next);
+      return next;
+    });
+  }, [view.gameId, view.you.id]);
 
   // Live refetches flow in through `tasks`; locally-drawn refills live alongside.
   const allTasks = useMemo(() => {
@@ -463,7 +474,7 @@ export function TasksScreen({
 
   const complete = (t: Task, answer: string | null) => {
     setDone((d) => ({ ...d, [t.id]: true }));
-    setArchive((a) => [{ prompt: t.prompt, tier: t.tier, kind: t.kind, answer, at: now }, ...a]);
+    addToArchive({ prompt: t.prompt, tier: t.tier, kind: t.kind, answer, at: now });
     setToast(answer ? "Logged — proof saved to your archive." : "Noted — a fresh dare just landed.");
     setTimeout(() => setToast(null), 1900);
     onComplete(t, answer);

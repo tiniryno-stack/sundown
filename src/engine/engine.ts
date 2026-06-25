@@ -214,12 +214,9 @@ export class GameEngine {
         role: p.role,
       });
     } else {
-      // Killer completion advances ONLY this killer's meter (§8 separation).
-      this.schedule("applyKillerMeter", applyAt, {
-        playerId: p.id,
-        points,
-        tier,
-      });
+      // Killer meter applies immediately so the killer sees their own progress.
+      // applyAt is reserved for the future town-facing ominous notification.
+      p.meterPoints += points;
     }
     this.log("taskCompleted", {
       playerId: p.id,

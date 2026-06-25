@@ -10,6 +10,7 @@ const K = {
   tutorialSeen: "sundown.tutorialSeen",
   theme: "sundown.theme",
   votePick: (gameId: string, index: number) => `sundown.vote.${gameId}.${index}`,
+  archive: (gameId: string, playerId: string) => `sundown.archive.${gameId}.${playerId}`,
 };
 
 function read<T>(key: string): T | null {
@@ -57,9 +58,12 @@ export const store = {
   getTheme: () => read<"light" | "dark">(K.theme),
   setTheme: (t: "light" | "dark") => write(K.theme, t),
 
-  // Remember the player's own vote target (the one vote they're allowed to see)
-  // until the backend echoes vote.yourVote itself.
   getVotePick: (gameId: string, index: number) => read<string>(K.votePick(gameId, index)),
   setVotePick: (gameId: string, index: number, targetId: string) =>
     write(K.votePick(gameId, index), targetId),
+
+  getArchive: (gameId: string, playerId: string) =>
+    read<{ prompt: string; tier: string; kind: string; answer: string | null; at: number }[]>(K.archive(gameId, playerId)) ?? [],
+  setArchive: (gameId: string, playerId: string, items: { prompt: string; tier: string; kind: string; answer: string | null; at: number }[]) =>
+    write(K.archive(gameId, playerId), items),
 };
