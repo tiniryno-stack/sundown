@@ -8,7 +8,7 @@ import type {
 
 const BASE: string =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ||
-  "http://localhost:3000";
+  "https://sundown-backend-production.up.railway.app";
 
 export function apiBase(): string {
   return BASE;
