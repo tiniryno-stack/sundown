@@ -323,10 +323,8 @@ function LiveApp() {
   const doJoin = useCallback(async ({ name, code }: { name: string; code: string }) => {
     setJoinBusy(true);
     setJoinError(null);
-    // The brief's code is "SUN-XXXX"; the gameId is "g_xxxx". Accept either, and a
-    // raw gameId, so testers can paste exactly what `npm run serve` prints.
-    const cleaned = code.trim().replace(/^SUN-?/i, "").toLowerCase();
-    const gameId = code.trim().startsWith("g_") ? code.trim() : `g_${cleaned}`;
+    const cleaned = code.trim().toLowerCase();
+    const gameId = cleaned.startsWith("g_") ? cleaned : `g_${cleaned}`;
     try {
       const { playerId, token } = await api.join(gameId, name);
       const id: Identity = { gameId, playerId, token, name };
