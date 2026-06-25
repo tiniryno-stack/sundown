@@ -15,24 +15,37 @@
 import path from "node:path";
 import { GameService } from "../service/gameService.js";
 import { FileStore } from "../persistence/fileStore.js";
+import { RedisStore } from "../persistence/redisStore.js";
 import { InMemoryStore } from "../persistence/store.js";
 import type { ServiceGameRecord } from "../service/types.js";
 import { createServer } from "./http.js";
 
 const port = Number(process.env.PORT ?? 3000);
 const timeScale = Number(process.env.TIME_SCALE ?? 1);
-const useFile = (process.env.STORE ?? "file") !== "memory";
 
-const store = useFile
-  ? new FileStore<ServiceGameRecord>(path.join("data", "games"))
-  : new InMemoryStore<ServiceGameRecord>();
+// Store selection (highest priority first):
+//   1. Upstash Redis — durable across container restarts (Railway-safe), if both
+//      UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set.
+//   2. FileStore (STORE != "memory") — durable JSON files under data/games.
+//   3. InMemoryStore (STORE == "memory") — ephemeral.
+const useRedis = Boolean(
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
+);
+const useFile = (process.env.STORE ?? "file") !== "memory";
+const storeKind = useRedis ? "redis" : useFile ? "file" : "memory";
+
+const store = useRedis
+  ? new RedisStore<ServiceGameRecord>()
+  : useFile
+    ? new FileStore<ServiceGameRecord>(path.join("data", "games"))
+    : new InMemoryStore<ServiceGameRecord>();
 
 const service = new GameService(store, { timeScale });
 const server = createServer(service);
 
 server.listen(port, () => {
   console.log(`[server] listening on http://localhost:${port}`);
-  console.log(`[server] store=${useFile ? "file" : "memory"} timeScale=${timeScale} ai=${process.env.ANTHROPIC_API_KEY ? "anthropic" : "mock"}`);
+  console.log(`[server] store=${storeKind} timeScale=${timeScale} ai=${process.env.ANTHROPIC_API_KEY ? "anthropic" : "mock"}`);
 });
 
 // Optional host-side Director loop (§15.6) — opt in via DIRECTOR_INTERVAL_SEC.
