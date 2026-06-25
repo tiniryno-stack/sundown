@@ -33,6 +33,11 @@ import type {
 
 const VOTE_WINDOW_MIN = 20; // voting opens this long before a scheduled vote (§6)
 
+/** Fire a top-up when the player sees fewer than this many available tasks. */
+const TOPUP_THRESHOLD = 8;
+/** How many tasks to add per top-up batch. */
+const TOPUP_BATCH = 12;
+
 export interface GameServiceOptions {
   /** Epoch-ms clock (injectable for deterministic tests). */
   now?: () => number;
@@ -218,6 +223,11 @@ export class GameService {
    * The deck is shared and portable; `availableAtMinute` is when each task can be
    * tapped again (0 = available now). The same prompt being doable by anyone is
    * the camouflage that hides killers in the crowd (§7.1).
+   *
+   * Deck top-up: if the number of tasks currently available (not on cooldown) for
+   * this player drops below TOPUP_THRESHOLD, we fire-and-forget a top-up that
+   * appends freshly generated tasks to the shared deck. The top-up never fails the
+   * getTasks call — errors are silently swallowed.
    */
   async getTasks(
     gameId: string,
@@ -227,9 +237,18 @@ export class GameService {
     const record = await this.load(gameId);
     if (!record) return fail("unknown game");
     if (!this.auth(record, playerId, token)) return fail("bad credentials");
+    const nowMin = this.nowMinute(record);
     const cds = record.cooldowns[playerId] ?? {};
     const tasks = (record.deck ?? []).map((t) => ({ ...t, availableAtMinute: cds[t.id] ?? 0 }));
-    return { tasks, nowMinute: this.nowMinute(record) };
+
+    // Count tasks that are available right now for this player.
+    const availableCount = tasks.filter((t) => t.availableAtMinute <= nowMin).length;
+    if (availableCount < TOPUP_THRESHOLD) {
+      // Fire-and-forget: top up the deck asynchronously, never blocking or failing this call.
+      this.topUpDeck(gameId).catch(() => undefined);
+    }
+
+    return { tasks, nowMinute: nowMin };
   }
 
   // ===========================================================================
@@ -397,6 +416,36 @@ export class GameService {
     const gen = new DeckGenerator(this.deckClient);
     const res = await gen.generate({ count: Math.max(24, players * 4) });
     return res.deck.tasks;
+  }
+
+  /**
+   * Append a fresh batch of tasks to an existing game's deck, deduplicating by
+   * task ID. Called fire-and-forget from getTasks — must never throw.
+   */
+  private async topUpDeck(gameId: string): Promise<void> {
+    const record = await this.load(gameId);
+    // Only top up an active game that actually has a deck.
+    if (!record || record.phase !== "active" || !record.deck) return;
+
+    const gen = new DeckGenerator(this.deckClient);
+    const res = await gen.generate({ count: TOPUP_BATCH });
+    const newTasks = res.deck.tasks;
+
+    // Re-load to get the latest state in case another top-up already ran.
+    const fresh = await this.load(gameId);
+    if (!fresh || fresh.phase !== "active" || !fresh.deck) return;
+
+    const existingIds = new Set(fresh.deck.map((t) => t.id));
+    // Re-index incoming tasks so their IDs don't collide with existing ones.
+    const offset = fresh.deck.length;
+    const deduped = newTasks
+      .filter((t) => !existingIds.has(t.id))
+      .map((t, i) => ({ ...t, id: `topup${offset + i}` }));
+
+    if (deduped.length === 0) return;
+
+    fresh.deck = [...fresh.deck, ...deduped];
+    await this.store.save(gameId, fresh);
   }
 
   private projectFor(record: ServiceGameRecord, engine: GameEngine, playerId: string): PlayerView {
