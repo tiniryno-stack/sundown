@@ -187,7 +187,7 @@ function HomePlaceholder() {
 
 /* ── actions surface (the only thing that differs live vs demo) ── */
 type Actions = {
-  completeTask: (task: Task, answer: string | null) => void;
+  completeTask: (task: Task, answer: string | null, involvedPlayerIds?: string[]) => void;
   castVote: (targetId: string) => void;
   killerKill: (targetId: string) => void;
   killerBankMove: () => void;
@@ -354,11 +354,15 @@ function LiveApp() {
   }, []);
 
   const actions: Actions = {
-    completeTask: (task) => {
+    completeTask: (task, _answer, involvedPlayerIds) => {
       if (!identity) return;
       void api.completeTask(identity.gameId, identity.playerId, identity.token, task.id)
         .then(() => { void fetchTasks(); refresh(); })
         .catch(() => { void fetchTasks(); });
+      // Schedule a witness notice to each tagged player (2 min delay).
+      for (const targetId of (involvedPlayerIds ?? [])) {
+        void api.addWitnessNotice(identity.gameId, identity.playerId, identity.token, targetId, task.prompt, 2 * 60_000).catch(() => {});
+      }
     },
     castVote: (targetId) => {
       if (!identity || !view) return;

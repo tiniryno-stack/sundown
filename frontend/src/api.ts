@@ -72,6 +72,9 @@ export const api = {
   deleteGame: (gameId: string, hostId: string) =>
     post<ActionResult>(`/games/${gameId}/delete`, { hostId }),
 
+  addWitnessNotice: (gameId: string, playerId: string, token: string, targetPlayerId: string, taskPrompt: string, delayMs: number) =>
+    post<ActionResult>(`/games/${gameId}/witness-notice`, { playerId, token, targetPlayerId, taskPrompt, delayMs }),
+
   // ── Player state ────────────────────────────────────────────────
   getState: (gameId: string, playerId: string, token: string) =>
     get<PlayerView>(`/games/${gameId}/state`, { playerId, token }),

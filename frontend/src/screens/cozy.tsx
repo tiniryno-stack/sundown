@@ -3,9 +3,9 @@
    prototype's window.SD globals — data + actions now arrive as props. */
 
 import { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from "react";
-import type { PlayerView, Task, Tier } from "../types";
+import type { PlayerView, PublicPlayer, Task, Tier } from "../types";
 import { store } from "../storage";
-import { INTENSITY_SWAP, drawTask } from "../constants";
+import { drawTask } from "../constants";
 import {
   Button, Card, EventFeed, HudReadout, Icon, LivingMini, MoodHero, Pill,
   RoleCard, RosterRow, Sheet, SkyHeader, avatarColor, clockOf, mmss, nameOf, roleKeyOf,
@@ -349,11 +349,6 @@ function TaskRow({ t, now, done, onTap, startedAtMs }: { t: Task; now: number; d
           {t.group && <><span style={{ opacity: .5 }}>·</span><span>2+ people</span></>}
           {proof && !resting && <><span style={{ opacity: .5 }}>·</span><span style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 3 }}><Icon.pencil s={11} /> logs proof</span></>}
         </div>
-        {t.intensitySwap && !resting &&
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5, fontSize: 12, color: "var(--ink-faint)" }}>
-            <Icon.glass s={11} /><span>{t.intensitySwap}</span>
-          </div>
-        }
       </div>
       {proof && !done ? <ProofChip disabled={resting} /> : <CheckCircle done={done} disabled={resting} />}
     </div>
@@ -373,13 +368,21 @@ function SectionHeader({ tone, label, count }: { tone: string; label: string; co
   );
 }
 
-type ArchiveItem = { prompt: string; tier: Tier; kind: Task["kind"]; answer: string | null; at: number };
+type ArchiveItem = { prompt: string; tier: Tier; kind: Task["kind"]; answer: string | null; at: number; involvedNames?: string[] };
 
-function ConfirmSheet({ task, onConfirm, onClose }: { task: Task; onConfirm: () => void; onClose: () => void }) {
+function ConfirmSheet({ task, players, onConfirm, onClose }: {
+  task: Task;
+  players: PublicPlayer[];
+  onConfirm: (involvedIds: string[], involvedNames: string[]) => void;
+  onClose: () => void;
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
   const tier = TIER_META[task.tier] ?? TIER_META.light;
   const tone = `var(--${tier.tone})`;
   const covert = task.kind === "covert";
   const Glyph = covert ? Icon.eye : Icon.glass;
+  const toggle = (id: string) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+  const alive = players.filter(p => p.alive);
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 14 }}>
@@ -394,12 +397,44 @@ function ConfirmSheet({ task, onConfirm, onClose }: { task: Task; onConfirm: () 
         </div>
       </div>
       <div style={{ fontSize: 16, color: "var(--ink)", fontWeight: 700, lineHeight: 1.35,
-        marginBottom: 20, padding: "14px 16px", borderRadius: 14, background: "var(--surface-2)",
+        marginBottom: 16, padding: "14px 16px", borderRadius: 14, background: "var(--surface-2)",
         border: "1px solid var(--line)" }}>
         {task.prompt}
       </div>
-      <Button full onClick={onConfirm}>
-        <Icon.check s={18} /> Yes, I did this
+      {alive.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div className="sd-mono" style={{ color: "var(--ink-faint)", marginBottom: 10 }}>
+            Who was involved? <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {alive.map(p => {
+              const on = selected.includes(p.id);
+              return (
+                <div key={p.id} className="sd-press" onClick={() => toggle(p.id)} style={{
+                  display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 9px",
+                  borderRadius: 999, cursor: "pointer",
+                  background: on ? "var(--accent)" : "var(--surface-2)",
+                  color: on ? "var(--accent-ink)" : "var(--ink)",
+                  border: on ? "none" : "1px solid var(--line-strong)",
+                  fontWeight: 700, fontSize: 14, transition: "background .15s, color .15s",
+                }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 999, background: on ? "rgba(0,0,0,0.15)" : avatarColor(p.id),
+                    color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
+                    {p.name[0]}
+                  </div>
+                  {p.name}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      <Button full onClick={() => {
+        const names = alive.filter(p => selected.includes(p.id)).map(p => p.name);
+        onConfirm(selected, names);
+      }}>
+        <Icon.check s={18} /> {selected.length > 0 ? `Yes — with ${selected.length === 1 ? alive.find(p => p.id === selected[0])?.name : `${selected.length} people`}` : "Yes, I did this"}
       </Button>
       <div style={{ marginTop: 10 }}>
         <Button full variant="soft" onClick={onClose}>Cancel</Button>
@@ -470,6 +505,17 @@ function ArchiveSheet({ archive, onClose, startedAtMs }: { archive: ArchiveItem[
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.28, textWrap: "pretty" }}>{a.prompt}</div>
                   <div className="sd-mono" style={{ color: "var(--ink-faint)", marginTop: 5 }}>{(TIER_META[a.tier] ?? TIER_META.light).label}{a.kind === "covert" ? " · covert" : ""} · {clockOf(a.at, startedAtMs)}</div>
+                  {a.involvedNames && a.involvedNames.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
+                      {a.involvedNames.map(name => (
+                        <span key={name} style={{ display: "inline-flex", alignItems: "center", height: 22, padding: "0 9px",
+                          borderRadius: 999, background: "var(--surface)", border: "1px solid var(--line-strong)",
+                          fontSize: 12, fontWeight: 700, color: "var(--ink-soft)" }}>
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {a.answer &&
                     <div style={{
                       display: "flex", alignItems: "center", gap: 7, marginTop: 9, padding: "8px 11px", borderRadius: 10,
@@ -497,7 +543,7 @@ export function TasksScreen({
   /** demo flourish: replace a finished dare with a fresh one of the same tier */
   refill?: boolean;
   /** real side-effect: POST /tasks/complete (answer is local-only archive) */
-  onComplete: (task: Task, answer: string | null) => void;
+  onComplete: (task: Task, answer: string | null, involvedPlayerIds?: string[]) => void;
 }) {
   const now = view.nowMinute;
   const [extra, setExtra] = useState<Task[]>([]);
@@ -525,12 +571,15 @@ export function TasksScreen({
   }, [tasks, extra]);
   const doneCount = Object.values(done).filter(Boolean).length;
 
-  const complete = (t: Task, answer: string | null) => {
+  const complete = (t: Task, answer: string | null, involvedIds: string[] = [], involvedNames: string[] = []) => {
     setDone((d) => ({ ...d, [t.id]: true }));
-    addToArchive({ prompt: t.prompt, tier: t.tier, kind: t.kind, answer, at: now });
-    setToast(answer ? "Logged — proof saved to your archive." : "Noted — a fresh dare just landed.");
-    setTimeout(() => setToast(null), 1900);
-    onComplete(t, answer);
+    addToArchive({ prompt: t.prompt, tier: t.tier, kind: t.kind, answer, at: now, involvedNames: involvedNames.length ? involvedNames : undefined });
+    const msg = answer ? "Logged — proof saved to your archive."
+      : involvedNames.length ? `Noted — logged with ${involvedNames[0]}${involvedNames.length > 1 ? ` +${involvedNames.length - 1}` : ""}.`
+      : "Noted — a fresh dare just landed.";
+    setToast(msg);
+    setTimeout(() => setToast(null), 2200);
+    onComplete(t, answer, involvedIds);
     if (refill) setTimeout(() => setExtra((list) => [...list, drawTask(t.tier)]), 650);
   };
 
@@ -597,9 +646,6 @@ export function TasksScreen({
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, padding: "0 4px", fontSize: 13, color: "var(--ink-faint)" }}>
-        <Icon.glass s={15} /><span style={{ flex: 1 }}>{INTENSITY_SWAP}</span>
-      </div>
 
       {toast &&
         <div className="sd-fade" style={{
@@ -611,8 +657,11 @@ export function TasksScreen({
         </div>
       }
 
-      {confirmTask && <ConfirmSheet task={confirmTask} onClose={() => setConfirmTask(null)}
-        onConfirm={() => { complete(confirmTask, null); setConfirmTask(null); }} />}
+      {confirmTask && <ConfirmSheet
+        task={confirmTask}
+        players={view.players.filter(p => p.id !== view.you.id)}
+        onClose={() => setConfirmTask(null)}
+        onConfirm={(ids, names) => { complete(confirmTask, null, ids, names); setConfirmTask(null); }} />}
       {proofTask && <ProofSheet task={proofTask} onClose={() => setProofTask(null)}
         onConfirm={(answer) => { complete(proofTask, answer); setProofTask(null); }} />}
       {archiveOpen && <ArchiveSheet archive={archive} onClose={() => setArchiveOpen(false)} startedAtMs={view.startedAtMs} />}

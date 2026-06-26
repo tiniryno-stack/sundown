@@ -42,6 +42,8 @@ export interface ServiceGameRecord {
   startedAtMs: number;
   /** Per-round results (Seasons format may have several). */
   results: GameResult[];
+  /** Pending witness notices — delivered to target player on next state poll after deliverAfterMs. */
+  witnessNotices?: { id: string; forPlayerId: string; fromName: string; taskPrompt: string; deliverAfterMs: number }[];
 }
 
 export type BarStatus = "healthy" | "strained" | "critical" | "unknown";
@@ -145,6 +147,7 @@ export interface HostView {
   nowMinute: number;
   finaleMinute: number;
   startedAtMs: number;
+  events: Array<{ at: number; kind: string; message: string }>;
   killCost: number;
   maxMoves: number;
   moveCharges: number;

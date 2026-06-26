@@ -109,6 +109,7 @@ export type HostView = {
   nowMinute: number;
   finaleMinute: number;
   startedAtMs: number;
+  events: FeedEvent[];
   killCost: number;
   maxMoves: number;
   moveCharges: number;

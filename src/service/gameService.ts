@@ -190,8 +190,36 @@ export class GameService {
     if (!this.auth(record, playerId, token)) return fail("bad credentials");
     if (record.phase === "lobby" || !record.engine) return this.projectLobby(record, playerId);
     const engine = this.syncedEngine(record);
+    // Deliver any due witness notices into the event stream.
+    const nowMs = this.now();
+    const due = (record.witnessNotices ?? []).filter(n => n.forPlayerId === playerId && n.deliverAfterMs <= nowMs);
+    if (due.length > 0) {
+      const m = this.nowMinute(record);
+      for (const n of due) {
+        (engine.state.publicEvents as Array<{at:number;kind:string;message:string}>)
+          .push({ at: m, kind: "witness", message: `${n.fromName} completed a task you were part of: "${n.taskPrompt}"` });
+      }
+      record.witnessNotices = (record.witnessNotices ?? []).filter(n => !(n.forPlayerId === playerId && n.deliverAfterMs <= nowMs));
+    }
     await this.store.save(gameId, record);
     return this.projectFor(record, engine, playerId);
+  }
+
+  async addWitnessNotice(gameId: string, playerId: string, token: string, targetPlayerId: string, taskPrompt: string, delayMs: number): Promise<ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    if (!this.auth(record, playerId, token)) return fail("bad credentials");
+    const fromName = record.roster.find(r => r.id === playerId)?.name ?? "Someone";
+    if (!record.witnessNotices) record.witnessNotices = [];
+    record.witnessNotices.push({
+      id: `wn_${Date.now().toString(36)}`,
+      forPlayerId: targetPlayerId,
+      fromName,
+      taskPrompt,
+      deliverAfterMs: this.now() + delayMs,
+    });
+    await this.store.save(gameId, record);
+    return { ok: true };
   }
 
   /** Lobby projection (no engine yet): roster + waiting state for the lobby screen. */
@@ -359,6 +387,7 @@ export class GameService {
         nowMinute: 0,
         finaleMinute: record.config.finaleMin,
         startedAtMs: record.startedAtMs,
+        events: [],
         killCost: record.config.killCost,
         maxMoves: record.config.maxMoves,
         moveCharges: 0,
@@ -418,6 +447,7 @@ export class GameService {
       townCount: livingTown.length,
       nowMinute: m,
       startedAtMs: record.startedAtMs,
+      events: s.publicEvents as Array<{ at: number; kind: string; message: string }>,
       finaleMinute: record.config.finaleMin,
       vote: {
         open: active !== null,

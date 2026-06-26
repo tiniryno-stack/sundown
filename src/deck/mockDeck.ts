@@ -17,7 +17,7 @@ interface RawTask {
   requiresProp?: string;
 }
 
-const SWAP = "Use a non-alcoholic drink or just mime the sip — totally fine.";
+const SWAP = "";
 
 const POOL: RawTask[] = [
   // Light (1 pt)

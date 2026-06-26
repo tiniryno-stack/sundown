@@ -518,6 +518,52 @@ function ResultBanner({ result, startedAtMs }: { result: NonNullable<HostView["r
   );
 }
 
+/* ── HostTimeline ────────────────────────────────────────── */
+const EVENT_ICON: Record<string, (p: { s?: number }) => React.ReactElement> = {
+  kill: Icon.blade,
+  shield: Icon.shield,
+  vote: HIcon.gavel,
+  task: Icon.glass,
+  witness: Icon.bell,
+};
+function HostTimeline({ view }: { view: HostView }) {
+  const events = [...(view.events ?? [])].reverse();
+  return (
+    <Panel style={{ display: "flex", flexDirection: "column", minHeight: 0, maxHeight: 420, overflow: "hidden" }}>
+      <PanelHead icon={Icon.list} title="Event log" hint={`${events.length} event${events.length !== 1 ? "s" : ""}`} />
+      <div style={{ overflowY: "auto", flex: 1, margin: "0 -4px", paddingRight: 4 }}>
+        {events.length === 0 ? (
+          <div style={{ fontSize: 13.5, color: "var(--ink-faint)", padding: "12px 4px", lineHeight: 1.5 }}>
+            The day just began — events will appear here as the game unfolds.
+          </div>
+        ) : events.map((e, i) => {
+          const Ic = EVENT_ICON[e.kind] ?? Icon.spark;
+          const isWitness = e.kind === "witness";
+          return (
+            <div key={i} style={{ display: "flex", gap: 11, padding: "11px 4px",
+              borderTop: i ? "1px solid var(--line)" : "none" }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, display: "flex",
+                alignItems: "center", justifyContent: "center",
+                background: isWitness ? "color-mix(in oklab, var(--accent) 12%, var(--surface-2))" : "var(--surface-2)",
+                color: isWitness ? "var(--accent)" : "var(--ink-faint)" }}>
+                <Ic s={15} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, color: "var(--ink)", fontWeight: 600, lineHeight: 1.35 }}>
+                  {e.message}
+                </div>
+                <div className="sd-mono" style={{ color: "var(--ink-faint)", marginTop: 3 }}>
+                  {clockOf(e.at, view.startedAtMs)}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
 /* ── StatsPanel ──────────────────────────────────────────── */
 function StatsPanel({ view }: { view: HostView }) {
   const s = view.startedAtMs;
@@ -609,6 +655,7 @@ function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: s
             <ParityWatch view={view} />
             <TownBarPanel view={view} />
           </div>
+          <HostTimeline view={view} />
           {/* Col C content shown here when 3-col collapses */}
           <div className="host-col-c-inline">
             <VotesPanel view={view} />

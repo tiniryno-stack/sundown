@@ -118,6 +118,10 @@ async function dispatch(service: GameService, gameId: string, sub: string, ctx: 
       return service.runDirectorTick(gameId, host());
     case "GET host-state":
       return service.getHostState(gameId, host());
+    case "POST witness-notice":
+      return service.addWitnessNotice(gameId, pid(), tok(),
+        String(ctx.body.targetPlayerId ?? ""), String(ctx.body.taskPrompt ?? ""),
+        Number(ctx.body.delayMs ?? 120_000));
     case "POST delete":
       return service.deleteGame(gameId, host());
     default:
