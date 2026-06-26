@@ -432,6 +432,12 @@ function LiveApp() {
 /* ── entry: pick demo vs host vs live from the URL ── */
 export default function App() {
   const q = new URLSearchParams(window.location.search);
+  // ?reset clears any stored identity and returns to the join screen.
+  if (q.has("reset")) {
+    store.clearIdentity();
+    window.location.replace(window.location.pathname);
+    return null;
+  }
   if (q.has("host")) return <HostApp />;
   const demo = q.has("demo") || q.has("role") || q.has("phase") || q.has("bar");
   if (demo) {
