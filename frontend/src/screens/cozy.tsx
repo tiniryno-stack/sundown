@@ -368,7 +368,7 @@ function SectionHeader({ tone, label, count }: { tone: string; label: string; co
   );
 }
 
-type ArchiveItem = { prompt: string; tier: Tier; kind: Task["kind"]; answer: string | null; at: number; involvedNames?: string[] };
+type ArchiveItem = { prompt: string; tier: Tier; kind: Task["kind"]; answer: string | null; at: number; involvedNames?: string[]; rating?: "up" | "down" };
 
 function ConfirmSheet({ task, players, onConfirm, onClose }: {
   task: Task;
@@ -481,7 +481,20 @@ function ProofSheet({ task, onConfirm, onClose }: { task: Task; onConfirm: (answ
   );
 }
 
-function ArchiveSheet({ archive, onClose, startedAtMs }: { archive: ArchiveItem[]; onClose: () => void; startedAtMs?: number }) {
+function ThumbBtn({ active, color, onClick, children }: { active: boolean; color: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <div className="sd-press" onClick={onClick} style={{
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      width: 30, height: 30, borderRadius: 8, cursor: "pointer",
+      background: active ? `color-mix(in oklab, ${color} 18%, var(--surface))` : "var(--surface-2)",
+      color: active ? color : "var(--ink-faint)",
+      border: active ? `1px solid color-mix(in oklab, ${color} 35%, transparent)` : "1px solid transparent",
+      transition: "background .15s, color .15s",
+    }}>{children}</div>
+  );
+}
+
+function ArchiveSheet({ archive, onClose, startedAtMs, onRate }: { archive: ArchiveItem[]; onClose: () => void; startedAtMs?: number; onRate?: (prompt: string, rating: "up" | "down") => void }) {
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 4 }}>
@@ -503,7 +516,15 @@ function ArchiveSheet({ archive, onClose, startedAtMs }: { archive: ArchiveItem[
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <span style={{ marginTop: 1, color: "var(--good)", display: "flex", flexShrink: 0 }}><Icon.check s={16} /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.28, textWrap: "pretty" }}>{a.prompt}</div>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.28, textWrap: "pretty", flex: 1 }}>{a.prompt}</div>
+                    {onRate && (
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0, marginTop: 1 }}>
+                        <ThumbBtn active={a.rating === "up"} color="var(--good)" onClick={() => onRate(a.prompt, "up")}>👍</ThumbBtn>
+                        <ThumbBtn active={a.rating === "down"} color="var(--bad)" onClick={() => onRate(a.prompt, "down")}>👎</ThumbBtn>
+                      </div>
+                    )}
+                  </div>
                   <div className="sd-mono" style={{ color: "var(--ink-faint)", marginTop: 5 }}>{(TIER_META[a.tier] ?? TIER_META.light).label}{a.kind === "covert" ? " · covert" : ""} · {clockOf(a.at, startedAtMs)}</div>
                   {a.involvedNames && a.involvedNames.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
@@ -536,7 +557,7 @@ function ArchiveSheet({ archive, onClose, startedAtMs }: { archive: ArchiveItem[
 }
 
 export function TasksScreen({
-  view, tasks, refill, onComplete,
+  view, tasks, refill, onComplete, onRate,
 }: {
   view: PlayerView;
   tasks: Task[];
@@ -544,6 +565,7 @@ export function TasksScreen({
   refill?: boolean;
   /** real side-effect: POST /tasks/complete (answer is local-only archive) */
   onComplete: (task: Task, answer: string | null, involvedPlayerIds?: string[]) => void;
+  onRate?: (taskPrompt: string, rating: "up" | "down") => void;
 }) {
   const now = view.nowMinute;
   const [extra, setExtra] = useState<Task[]>([]);
@@ -664,7 +686,16 @@ export function TasksScreen({
         onConfirm={(ids, names) => { complete(confirmTask, null, ids, names); setConfirmTask(null); }} />}
       {proofTask && <ProofSheet task={proofTask} onClose={() => setProofTask(null)}
         onConfirm={(answer) => { complete(proofTask, answer); setProofTask(null); }} />}
-      {archiveOpen && <ArchiveSheet archive={archive} onClose={() => setArchiveOpen(false)} startedAtMs={view.startedAtMs} />}
+      {archiveOpen && <ArchiveSheet archive={archive} onClose={() => setArchiveOpen(false)} startedAtMs={view.startedAtMs}
+        onRate={onRate ? (prompt, rating) => {
+          setArchive(prev => {
+            const next = prev.map(a => a.prompt === prompt ? { ...a, rating } : a);
+            store.setArchive(view.gameId, view.you.id, next);
+            return next;
+          });
+          onRate(prompt, rating);
+        } : undefined}
+      />}
     </div>
   );
 }

@@ -398,12 +398,12 @@ function RevealRow({ p, role, i }: { p: PlayerView["players"][number]; role: Rol
   );
 }
 
-export function GameOverScreen({ view, reveal }: { view: PlayerView; reveal?: Record<string, Role> }) {
+export function GameOverScreen({ view, reveal, onLeave }: { view: PlayerView; reveal?: Record<string, Role>; onLeave?: () => void }) {
   const res = view.result;
   if (!res) return null;
   const townWon = res.winner === "town";
   return (
-    <div className="sd-screen sd-scroll" style={{ padding: "78px 18px 34px" }}>
+    <div className="sd-screen sd-scroll" style={{ padding: "78px 18px 40px" }}>
       <div style={{ textAlign: "center", marginBottom: 22 }}>
         <div className="sd-eyebrow" style={{ marginBottom: 10 }}>The day is over</div>
         <div className="sd-display" style={{ fontSize: 52, color: townWon ? "var(--good)" : "var(--bad)", lineHeight: 1 }}>
@@ -426,6 +426,14 @@ export function GameOverScreen({ view, reveal }: { view: PlayerView; reveal?: Re
           Reveal comes from the host recap — roles are never in the player feed mid-game.
         </div>
       </Card>
+
+      {onLeave && (
+        <div style={{ marginTop: 24 }}>
+          <Button onClick={onLeave} variant="soft" full>
+            ← Join a new game
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

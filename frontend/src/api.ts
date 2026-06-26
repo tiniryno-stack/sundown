@@ -75,6 +75,9 @@ export const api = {
   addWitnessNotice: (gameId: string, playerId: string, token: string, targetPlayerId: string, taskPrompt: string, delayMs: number) =>
     post<ActionResult>(`/games/${gameId}/witness-notice`, { playerId, token, targetPlayerId, taskPrompt, delayMs }),
 
+  rateTask: (gameId: string, playerId: string, token: string, taskPrompt: string, rating: "up" | "down") =>
+    post<ActionResult>(`/games/${gameId}/tasks/rate`, { playerId, token, taskPrompt, rating }),
+
   // ── Player state ────────────────────────────────────────────────
   getState: (gameId: string, playerId: string, token: string) =>
     get<PlayerView>(`/games/${gameId}/state`, { playerId, token }),

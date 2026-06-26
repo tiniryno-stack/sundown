@@ -92,7 +92,7 @@ function BackBar({ label, onBack }: { label: string; onBack: () => void }) {
 type Pushed = "tools" | "vote" | "result" | null;
 
 function ActiveShell({
-  view, theme, toggleTheme, dark, tasks, suggestions, actions, reveal, demo,
+  view, theme, toggleTheme, dark, tasks, suggestions, actions, reveal, demo, onLeave,
 }: {
   view: PlayerView;
   theme: "light" | "dark";
@@ -103,6 +103,7 @@ function ActiveShell({
   actions: Actions;
   reveal?: Record<string, import("./types").Role>;
   demo: boolean;
+  onLeave?: () => void;
 }) {
   const [tab, setTab] = useState<"home" | "tasks">("home");
   const [pushed, setPushed] = useState<Pushed>(null);
@@ -119,7 +120,7 @@ function ActiveShell({
   // Auto-surface the vote when one opens.
   useEffect(() => { if (view.vote.open) setPushed((p) => (p === "vote" ? p : p)); }, [view.vote.open]);
 
-  if (over) return <GameOverScreen view={view} reveal={reveal} />;
+  if (over) return <GameOverScreen view={view} reveal={reveal} onLeave={onLeave} />;
   if (ghost) {
     return (
       <>
@@ -148,7 +149,7 @@ function ActiveShell({
     backLabel = "Home";
     body = <VoteResultScreen view={view} />;
   } else if (tab === "tasks") {
-    body = <TasksScreen view={view} tasks={tasks} refill={demo} onComplete={actions.completeTask} />;
+    body = <TasksScreen view={view} tasks={tasks} refill={demo} onComplete={actions.completeTask} onRate={actions.rateTask} />;
   } else {
     body = <HomeScreen view={view} nextVoteMin={nextVoteMin}
       theme={theme} onToggleTheme={toggleTheme}
@@ -188,6 +189,7 @@ function HomePlaceholder() {
 /* ── actions surface (the only thing that differs live vs demo) ── */
 type Actions = {
   completeTask: (task: Task, answer: string | null, involvedPlayerIds?: string[]) => void;
+  rateTask: (taskPrompt: string, rating: "up" | "down") => void;
   castVote: (targetId: string) => void;
   killerKill: (targetId: string) => void;
   killerBankMove: () => void;
@@ -256,7 +258,7 @@ function DemoApp({ initial }: { initial: { role: DemoRole; bar: DemoBar; phase: 
 
   const noopActions: Actions = {
     completeTask: () => {}, castVote: (id) => store.setVotePick(view.gameId, view.vote.index ?? 0, id),
-    killerKill: () => {}, killerBankMove: () => {}, killerSuggest: () => {},
+    killerKill: () => {}, killerBankMove: () => {}, killerSuggest: () => {}, rateTask: () => {},
   };
 
   let body: React.ReactNode;
@@ -381,6 +383,10 @@ function LiveApp() {
       if (!identity) return;
       void api.killerSuggest(identity.gameId, identity.playerId, identity.token, targetId).then(refresh).catch(() => {});
     },
+    rateTask: (taskPrompt, rating) => {
+      if (!identity) return;
+      void api.rateTask(identity.gameId, identity.playerId, identity.token, taskPrompt, rating).catch(() => {});
+    },
   };
 
   // ── render ──
@@ -442,7 +448,8 @@ function LiveApp() {
   return (
     <div className="sd-root" data-theme={theme}>
       <ActiveShell view={view} theme={theme} toggleTheme={toggleTheme} dark={dark}
-        tasks={tasks} suggestions={suggestions} actions={actions} demo={false} />
+        tasks={tasks} suggestions={suggestions} actions={actions} demo={false}
+        onLeave={() => { store.clearIdentity(); setIdentity(null); }} />
     </div>
   );
 }

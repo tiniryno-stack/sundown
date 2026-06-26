@@ -44,6 +44,8 @@ export interface ServiceGameRecord {
   results: GameResult[];
   /** Pending witness notices — delivered to target player on next state poll after deliverAfterMs. */
   witnessNotices?: { id: string; forPlayerId: string; fromName: string; taskPrompt: string; deliverAfterMs: number }[];
+  /** Player task ratings — collected for training data. */
+  taskRatings?: { taskPrompt: string; rating: "up" | "down"; playerId: string; at: number }[];
 }
 
 export type BarStatus = "healthy" | "strained" | "critical" | "unknown";

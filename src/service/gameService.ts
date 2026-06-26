@@ -205,6 +205,18 @@ export class GameService {
     return this.projectFor(record, engine, playerId);
   }
 
+  async rateTask(gameId: string, playerId: string, token: string, taskPrompt: string, rating: "up" | "down"): Promise<ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    if (!this.auth(record, playerId, token)) return fail("bad credentials");
+    if (!record.taskRatings) record.taskRatings = [];
+    // Replace any existing rating from this player for this prompt.
+    record.taskRatings = record.taskRatings.filter(r => !(r.playerId === playerId && r.taskPrompt === taskPrompt));
+    record.taskRatings.push({ taskPrompt, rating, playerId, at: this.now() });
+    await this.store.save(gameId, record);
+    return { ok: true };
+  }
+
   async addWitnessNotice(gameId: string, playerId: string, token: string, targetPlayerId: string, taskPrompt: string, delayMs: number): Promise<ActionResult> {
     const record = await this.load(gameId);
     if (!record) return fail("unknown game");
