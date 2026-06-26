@@ -942,6 +942,66 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) 
 }
 
 /* ── HostApp — root ──────────────────────────────────────── */
+/* ── HostPreStartScreen ──────────────────────────────────── */
+function HostPreStartScreen({ view, gameId, onEnter, onReset }: {
+  view: HostView;
+  gameId: string;
+  onEnter: () => void;
+  onReset: () => void;
+}) {
+  const living = view.players.filter(p => p.alive);
+  const killerCount = view.players.filter(p => p.team === "killer").length;
+  return (
+    <div style={{ minHeight: "100vh", background: "#0B0C0E", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ width: "100%", maxWidth: 440, display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* header */}
+        <div style={{ textAlign: "center", marginBottom: 4 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 56, height: 56, borderRadius: 16, background: "var(--accent)", color: "var(--accent-ink)",
+            marginBottom: 18 }}>
+            <Icon.eyeOff s={26} />
+          </div>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 28,
+            letterSpacing: "-0.02em", color: "var(--ink)" }}>The day has begun</div>
+          <div style={{ color: "var(--ink-faint)", marginTop: 8, fontSize: 14, lineHeight: 1.5, maxWidth: 320, margin: "10px auto 0" }}>
+            Roles have been assigned. The control room knows everything — only open it when you're ready and away from players.
+          </div>
+        </div>
+
+        {/* player count summary — no roles shown */}
+        <Panel>
+          <PanelHead icon={Icon.users} title="Table" hint={`${living.length} players`} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 4 }}>
+            <Stat label="Players" value={living.length} />
+            <Stat label="Finale" value={clockOf(view.finaleMinute, view.startedAtMs)} />
+          </div>
+          <div style={{ padding: "10px 12px", borderRadius: 11, background: "var(--surface-2)",
+            display: "flex", alignItems: "center", gap: 9, marginTop: 4 }}>
+            <Icon.eyeOff s={15} />
+            <span style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.4 }}>
+              Killer count hidden here. It will show in the control room. There {killerCount === 1 ? "is" : "are"} {killerCount} killer{killerCount !== 1 ? "s" : ""} — don't open the room near players.
+            </span>
+          </div>
+        </Panel>
+
+        <button onClick={onEnter} style={{
+          width: "100%", height: 56, borderRadius: 16, border: "none", cursor: "pointer",
+          background: "var(--accent)", color: "var(--accent-ink)",
+          fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 17,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+        }}>
+          <Icon.eye s={20} /> Open control room
+        </button>
+
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <ResetGameButton gameId={gameId} onDone={onReset} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HostApp() {
   const q = new URLSearchParams(window.location.search);
   const urlGameId = q.get("gameId");
@@ -949,6 +1009,8 @@ export function HostApp() {
   // If a gameId is in the URL, try to load that game directly.
   const [gameId, setGameId] = useState<string | null>(urlGameId);
   const { view, error, loading } = useHostView(gameId);
+  // Gate: host must explicitly confirm before seeing omniscient roles.
+  const [rolesConfirmed, setRolesConfirmed] = useState(false);
 
   const handleCreate = (id: string) => {
     setGameId(id);
@@ -1003,12 +1065,16 @@ export function HostApp() {
 
   if (!view) return null;
 
+  const handleReset = () => { setGameId(null); setRolesConfirmed(false); };
+
   return (
     <div data-theme="dark" className="host-root">
       {view.phase === "lobby" ? (
-        <HostLobbyScreen view={view} gameId={gameId} onStart={handleStart} onReset={() => setGameId(null)} />
+        <HostLobbyScreen view={view} gameId={gameId} onStart={handleStart} onReset={handleReset} />
+      ) : !rolesConfirmed ? (
+        <HostPreStartScreen view={view} gameId={gameId} onEnter={() => setRolesConfirmed(true)} onReset={handleReset} />
       ) : (
-        <HostActiveScreen view={view} gameId={gameId} onReset={() => setGameId(null)} />
+        <HostActiveScreen view={view} gameId={gameId} onReset={handleReset} />
       )}
     </div>
   );
