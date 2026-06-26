@@ -284,13 +284,16 @@ function DemoApp({ initial }: { initial: { role: DemoRole; bar: DemoBar; phase: 
 function LiveApp() {
   const [theme, toggleTheme] = useTheme();
   const dark = theme === "dark";
-  const [identity, setIdentity] = useState<Identity | null>(() => store.getIdentity());
+  // ?join=SUN7DD pre-fills the code and forces the Join screen regardless of
+  // any stored identity — the shared link targets a specific new game.
+  const joinParam = new URLSearchParams(window.location.search).get("join") ?? "";
+  const initialCode = joinParam ? joinParam.toUpperCase().replace(/^SUN-?/i, "SUN") : "SUN";
+  const [identity, setIdentity] = useState<Identity | null>(() =>
+    joinParam ? null : store.getIdentity(),
+  );
   const [joinBusy, setJoinBusy] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [tutorialSeen, setTutorialSeen] = useState(() => store.getTutorialSeen());
-  // ?join=SUN7DD (or just 7DD) pre-fills the code field so shared links skip typing.
-  const joinParam = new URLSearchParams(window.location.search).get("join") ?? "";
-  const initialCode = joinParam ? joinParam.toUpperCase().replace(/^SUN-?/i, "SUN") : "SUN";
 
   const { view, error, loading, refresh } = usePlayerView(identity);
 
