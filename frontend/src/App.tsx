@@ -410,9 +410,10 @@ function LiveApp() {
     const onStart = isHost
       ? () => { void api.startRound(view.gameId, store.getHostId()).then(refresh).catch(() => {}); }
       : undefined;
+    const onLeave = () => { store.clearIdentity(); setIdentity(null); };
     return (
       <div className="sd-root" data-theme={theme}>
-        <LobbyScreen view={view} onStart={onStart} />
+        <LobbyScreen view={view} onStart={onStart} onLeave={onLeave} />
       </div>
     );
   }

@@ -117,11 +117,12 @@ function gameCode(gameId: string): string {
 }
 
 export function LobbyScreen({
-  view, temp, onStart,
+  view, temp, onStart, onLeave,
 }: {
   view: PlayerView;
   temp?: "cold" | "warm";
   onStart?: () => void;
+  onLeave?: () => void;
 }) {
   const code = gameCode(view.gameId);
   const [name, setName] = useState(view.you.name);
@@ -177,6 +178,16 @@ export function LobbyScreen({
           <Button onClick={onStart} variant="soft" full>
             <Icon.spark s={18} /> Host: begin the day
           </Button>
+        )}
+
+        {onLeave && (
+          <div style={{ textAlign: "center" }}>
+            <div className="sd-press" onClick={onLeave}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6,
+                fontSize: 13.5, color: "var(--ink-faint)", fontWeight: 600, padding: "6px 0" }}>
+              ← Wrong game? Leave and join a different one
+            </div>
+          </div>
         )}
       </div>
     </div>
