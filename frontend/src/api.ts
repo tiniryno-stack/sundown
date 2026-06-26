@@ -69,6 +69,9 @@ export const api = {
   getHostState: (gameId: string, hostId: string) =>
     get<HostView>(`/games/${gameId}/host-state`, { hostId }),
 
+  deleteGame: (gameId: string, hostId: string) =>
+    post<ActionResult>(`/games/${gameId}/delete`, { hostId }),
+
   // ── Player state ────────────────────────────────────────────────
   getState: (gameId: string, playerId: string, token: string) =>
     get<PlayerView>(`/games/${gameId}/state`, { playerId, token }),

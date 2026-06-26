@@ -428,6 +428,18 @@ export class GameService {
   }
 
   // ===========================================================================
+  // Host: delete game (hard reset — removes from store entirely)
+  // ===========================================================================
+
+  async deleteGame(gameId: string, hostId: string): Promise<ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    if (record.hostId !== hostId) return fail("not the host");
+    await this.store.delete(gameId);
+    return { ok: true };
+  }
+
+  // ===========================================================================
   // Host: Director tick (§15)
   // ===========================================================================
 

@@ -118,6 +118,8 @@ async function dispatch(service: GameService, gameId: string, sub: string, ctx: 
       return service.runDirectorTick(gameId, host());
     case "GET host-state":
       return service.getHostState(gameId, host());
+    case "POST delete":
+      return service.deleteGame(gameId, host());
     default:
       return undefined;
   }

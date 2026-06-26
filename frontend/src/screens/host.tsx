@@ -114,6 +114,49 @@ function playerJoinUrl(gameId: string): string {
   return `${window.location.origin}/?join=${code}`;
 }
 
+function ResetGameButton({ gameId, onDone }: { gameId: string; onDone: () => void }) {
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const doDelete = async () => {
+    setBusy(true);
+    try {
+      await api.deleteGame(gameId, store.getHostId());
+    } catch { /* gone anyway */ }
+    // Clear the gameId from URL so we go back to create screen.
+    const next = new URL(window.location.href);
+    next.searchParams.delete("gameId");
+    window.history.replaceState({}, "", next.toString());
+    onDone();
+  };
+
+  if (confirm) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 13, color: "var(--bad)", fontWeight: 700 }}>Delete this game?</span>
+        <button onClick={busy ? undefined : doDelete} disabled={busy} style={{
+          height: 36, padding: "0 14px", borderRadius: 10, border: "none", cursor: "pointer",
+          background: "var(--bad)", color: "#fff", fontWeight: 700, fontSize: 13,
+        }}>{busy ? "Deleting…" : "Yes, delete"}</button>
+        <button onClick={() => setConfirm(false)} style={{
+          height: 36, padding: "0 12px", borderRadius: 10, border: "1px solid var(--line)",
+          background: "var(--surface-2)", color: "var(--ink)", cursor: "pointer", fontWeight: 600, fontSize: 13,
+        }}>Cancel</button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={() => setConfirm(true)} style={{
+      display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 14px",
+      borderRadius: 10, border: "1px solid var(--line)", cursor: "pointer",
+      background: "transparent", color: "var(--ink-faint)", fontWeight: 600, fontSize: 13,
+    }}>
+      Reset game
+    </button>
+  );
+}
+
 function CopyLinkButton({ gameId }: { gameId: string }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
@@ -463,7 +506,7 @@ function OmniscientBadge() {
 }
 
 /* ── HostActiveScreen ────────────────────────────────────── */
-function HostActiveScreen({ view, gameId }: { view: HostView; gameId: string }) {
+function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: string; onReset: () => void }) {
   const w = useWindowWidth();
   const frac = Math.min(1, view.nowMinute / view.finaleMinute);
 
@@ -492,6 +535,7 @@ function HostActiveScreen({ view, gameId }: { view: HostView; gameId: string }) 
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <CopyLinkButton gameId={gameId} />
+            <ResetGameButton gameId={gameId} onDone={onReset} />
             {w >= 600 && <OmniscientBadge />}
           </div>
         </div>
@@ -569,11 +613,12 @@ function HostActiveScreen({ view, gameId }: { view: HostView; gameId: string }) 
 
 /* ── HostLobbyScreen ─────────────────────────────────────── */
 function HostLobbyScreen({
-  view, gameId, onStart,
+  view, gameId, onStart, onReset,
 }: {
   view: HostView;
   gameId: string;
   onStart: () => void;
+  onReset: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -668,6 +713,10 @@ function HostLobbyScreen({
           <Icon.spark s={20} />
           {busy ? "Starting…" : canStart ? "Start the day" : `Need ${minPlayers - view.players.length} more players`}
         </button>
+
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+          <ResetGameButton gameId={gameId} onDone={onReset} />
+        </div>
       </div>
     </div>
   );
@@ -858,9 +907,9 @@ export function HostApp() {
   return (
     <div data-theme="dark" className="sd-root" style={{ background: "#0B0C0E" }}>
       {view.phase === "lobby" ? (
-        <HostLobbyScreen view={view} gameId={gameId} onStart={handleStart} />
+        <HostLobbyScreen view={view} gameId={gameId} onStart={handleStart} onReset={() => setGameId(null)} />
       ) : (
-        <HostActiveScreen view={view} gameId={gameId} />
+        <HostActiveScreen view={view} gameId={gameId} onReset={() => setGameId(null)} />
       )}
     </div>
   );
