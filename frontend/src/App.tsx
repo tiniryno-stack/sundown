@@ -342,6 +342,9 @@ function LiveApp() {
       const { playerId, token } = await api.join(gameId, name);
       const id: Identity = { gameId, playerId, token, name };
       store.setIdentity(id);
+      // Reset tutorial flag so every new game shows the walkthrough.
+      store.setTutorialSeen(false);
+      setTutorialSeen(false);
       setIdentity(id);
     } catch (e) {
       setJoinError(e instanceof ApiError ? e.message : "Couldn't join — check the code and try again.");
