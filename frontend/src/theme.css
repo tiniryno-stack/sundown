@@ -137,3 +137,72 @@ html[data-theme="light"] { background: #E7E7E3; }
 
 /* inputs inherit the family */
 input, button, textarea { font-family: inherit; }
+
+/* Host root inherits the same dark tokens as .sd-root[data-theme="dark"] */
+.host-root[data-theme="dark"] {
+  --bg: #0B0C0E;
+  --surface: #16181C;
+  --surface-2: #20232A;
+  --ink: #ECEEF1;
+  --ink-soft: rgba(236,238,241,0.60);
+  --ink-faint: rgba(236,238,241,0.36);
+  --line: rgba(255,255,255,0.09);
+  --line-strong: rgba(255,255,255,0.17);
+  --accent: #ECEEF1;
+  --accent-ink: #14161A;
+  --good: #34C281;
+  --warn: #D6A23E;
+  --bad: #F0564B;
+  --shadow: 0 14px 40px rgba(0,0,0,0.5);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* ── Host / Control Room root ───────────────────────────────
+   Full-viewport surface — no 520px cap, no overflow clip.
+   Used in place of .sd-root for the ?host route.           */
+.host-root {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background: #0B0C0E;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Host grid (3 cols → 2 → 1 as viewport narrows) ────── */
+.host-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0,1fr) 280px;
+  gap: 16px;
+  padding: 16px;
+  max-width: 1480px;
+  margin: 0 auto;
+  align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Col-C aside: visible at full 3-col width only */
+.host-col-c-aside { display: flex; flex-direction: column; gap: 16px; }
+/* Col-C inline: hidden at full width, shown inside col B on narrow screens */
+.host-col-c-inline { display: none; flex-direction: column; gap: 16px; }
+
+@media (max-width: 1099px) {
+  .host-grid { grid-template-columns: 260px minmax(0,1fr); }
+  .host-col-c-aside  { display: none; }
+  .host-col-c-inline { display: flex; }
+}
+@media (max-width: 767px) {
+  .host-grid { grid-template-columns: 1fr; padding: 12px; }
+}
+
+/* Inner 2-col stat grids collapse on very narrow screens */
+.host-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 500px) {
+  .host-stat-grid { grid-template-columns: 1fr; gap: 12px; }
+}

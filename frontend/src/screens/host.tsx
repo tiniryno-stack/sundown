@@ -11,10 +11,18 @@ import type { HostView } from "../types";
 
 const POLL_MS = 5000;
 
-/* ── responsive window width ─────────────────────────────── */
+/* ── responsive window width (iOS orientation-safe) ─────── */
 function useWindowWidth(): number {
   return useSyncExternalStore(
-    (cb) => { window.addEventListener("resize", cb); return () => window.removeEventListener("resize", cb); },
+    (cb) => {
+      window.addEventListener("resize", cb);
+      // iOS Safari fires orientationchange but not always resize.
+      window.addEventListener("orientationchange", cb);
+      return () => {
+        window.removeEventListener("resize", cb);
+        window.removeEventListener("orientationchange", cb);
+      };
+    },
     () => window.innerWidth,
     () => 1280,
   );
@@ -494,6 +502,21 @@ function ResultBanner({ result }: { result: NonNullable<HostView["result"]> }) {
   );
 }
 
+/* ── StatsPanel ──────────────────────────────────────────── */
+function StatsPanel({ view }: { view: HostView }) {
+  return (
+    <Panel>
+      <PanelHead icon={Icon.spark} title="Round stats" />
+      <div className="host-stat-grid">
+        <Stat label="Now" value={clockOf(view.nowMinute)} sub="game clock" />
+        <Stat label="Alive" value={view.livingCount} sub={`of ${view.players.length}`} />
+        <Stat label="Finale" value={clockOf(view.finaleMinute)} />
+        <Stat label="Votes left" value={view.voteTimesMin.filter(v => v > view.nowMinute).length} sub="remaining" />
+      </div>
+    </Panel>
+  );
+}
+
 /* ── OmniscientBadge ─────────────────────────────────────── */
 function OmniscientBadge() {
   return (
@@ -509,11 +532,6 @@ function OmniscientBadge() {
 function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: string; onReset: () => void }) {
   const w = useWindowWidth();
   const frac = Math.min(1, view.nowMinute / view.finaleMinute);
-
-  // Responsive grid: 3 cols on desktop, 2 on landscape tablet, 1 on portrait/phone.
-  const gridCols = w >= 1100 ? "300px minmax(0,1fr) 280px"
-    : w >= 720 ? "260px minmax(0,1fr)"
-    : "1fr";
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B0C0E", color: "var(--ink)" }}>
@@ -560,52 +578,31 @@ function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: s
         </div>
       </div>
 
-      {/* panels grid */}
-      <div style={{ maxWidth: 1480, margin: "0 auto", display: "grid",
-        gridTemplateColumns: gridCols, gap: 16, padding: 16, alignItems: "start" }}>
+      {/* panels grid — layout driven by CSS classes so rotation works natively */}
+      <div className="host-grid">
         {/* col A — roster + economy */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <RosterPanel view={view} />
           <EconomyPanel view={view} />
         </div>
-        {/* col B — parity + bar + (on 2-col: votes + stats inline) */}
+        {/* col B — parity + bar + col-C content on narrow screens */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {view.result && <ResultBanner result={view.result} />}
-          <div style={{ display: "grid", gridTemplateColumns: w >= 540 ? "1fr 1fr" : "1fr", gap: 16 }}>
+          <div className="host-stat-grid">
             <ParityWatch view={view} />
             <TownBarPanel view={view} />
           </div>
-          {/* On narrow layouts col C merges here */}
-          {w < 1100 && (
-            <>
-              <VotesPanel view={view} />
-              <Panel>
-                <PanelHead icon={Icon.spark} title="Round stats" />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                  <Stat label="Now" value={clockOf(view.nowMinute)} sub="game clock" />
-                  <Stat label="Alive" value={view.livingCount} sub={`of ${view.players.length}`} />
-                  <Stat label="Finale" value={clockOf(view.finaleMinute)} />
-                  <Stat label="Votes left" value={view.voteTimesMin.filter(v => v > view.nowMinute).length} sub="remaining" />
-                </div>
-              </Panel>
-            </>
-          )}
-        </div>
-        {/* col C — only rendered at full 3-col width */}
-        {w >= 1100 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Col C content shown here when 3-col collapses */}
+          <div className="host-col-c-inline">
             <VotesPanel view={view} />
-            <Panel>
-              <PanelHead icon={Icon.spark} title="Round stats" />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <Stat label="Now" value={clockOf(view.nowMinute)} sub="game clock" />
-                <Stat label="Alive" value={view.livingCount} sub={`of ${view.players.length}`} />
-                <Stat label="Finale" value={clockOf(view.finaleMinute)} />
-                <Stat label="Votes left" value={view.voteTimesMin.filter(v => v > view.nowMinute).length} sub="remaining" />
-              </div>
-            </Panel>
+            <StatsPanel view={view} />
           </div>
-        )}
+        </div>
+        {/* col C — hidden on narrow screens via CSS */}
+        <div className="host-col-c-aside">
+          <VotesPanel view={view} />
+          <StatsPanel view={view} />
+        </div>
       </div>
     </div>
   );
@@ -905,7 +902,7 @@ export function HostApp() {
   // No game yet — show create screen.
   if (!gameId) {
     return (
-      <div data-theme="dark" className="sd-root" style={{ background: "#0B0C0E" }}>
+      <div data-theme="dark" className="host-root">
         <HostCreateScreen onCreate={handleCreate} />
       </div>
     );
@@ -914,7 +911,7 @@ export function HostApp() {
   // Waiting for first fetch.
   if (loading && !view) {
     return (
-      <div data-theme="dark" className="sd-root" style={{ background: "#0B0C0E",
+      <div data-theme="dark" className="host-root" style={{
         display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
         <span style={{ display: "flex", animation: "sd-breathe 2s ease-in-out infinite", color: "var(--accent)" }}>
           <Icon.spark s={32} />
@@ -926,7 +923,7 @@ export function HostApp() {
   // Error (bad hostId, unknown game, etc.)
   if (error && !view) {
     return (
-      <div data-theme="dark" className="sd-root" style={{ background: "#0B0C0E",
+      <div data-theme="dark" className="host-root" style={{
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         height: "100vh", gap: 12, color: "var(--ink-soft)" }}>
         <Icon.alert s={28} />
@@ -943,7 +940,7 @@ export function HostApp() {
   if (!view) return null;
 
   return (
-    <div data-theme="dark" className="sd-root" style={{ background: "#0B0C0E" }}>
+    <div data-theme="dark" className="host-root">
       {view.phase === "lobby" ? (
         <HostLobbyScreen view={view} gameId={gameId} onStart={handleStart} onReset={() => setGameId(null)} />
       ) : (
