@@ -611,6 +611,8 @@ function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: s
   );
 }
 
+const BOT_NAMES = ["Alex", "Morgan", "Jordan", "Quinn", "Riley", "Casey", "Drew", "Blake", "Sage", "River"];
+
 /* ── HostLobbyScreen ─────────────────────────────────────── */
 function HostLobbyScreen({
   view, gameId, onStart, onReset,
@@ -622,14 +624,24 @@ function HostLobbyScreen({
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [botConfirm, setBotConfirm] = useState(false);
   const code = gameCode(gameId);
   const minPlayers = 4;
   const canStart = view.players.length >= minPlayers;
+  const botsNeeded = Math.max(0, minPlayers - view.players.length);
 
-  const handleStart = async () => {
+  const handleStart = async (withBots = false) => {
     setBusy(true);
+    setBotConfirm(false);
     setErr(null);
     try {
+      if (withBots && botsNeeded > 0) {
+        const taken = new Set(view.players.map(p => p.name));
+        const available = BOT_NAMES.filter(n => !taken.has(n));
+        for (let i = 0; i < botsNeeded; i++) {
+          await api.join(gameId, available[i] ?? `Bot ${i + 1}`);
+        }
+      }
       await onStart();
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Failed to start");
@@ -699,19 +711,45 @@ function HostLobbyScreen({
 
         {err && <div style={{ textAlign: "center", color: "var(--bad)", fontSize: 13.5, fontWeight: 600 }}>{err}</div>}
 
+        {/* Bot fill confirmation — shown when under minimum and host tries to start */}
+        {botConfirm && !canStart && (
+          <div style={{ padding: "16px 18px", borderRadius: 16, background: "var(--surface)",
+            border: "1px solid var(--line-strong)", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>Only {view.players.length} player{view.players.length !== 1 ? "s" : ""} so far</div>
+              <div style={{ fontSize: 13.5, color: "var(--ink-faint)", marginTop: 4, lineHeight: 1.45 }}>
+                Fill the remaining <b style={{ color: "var(--ink)" }}>{botsNeeded} spot{botsNeeded !== 1 ? "s" : ""}</b> with bots and start anyway? Good for testing.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={busy ? undefined : () => handleStart(true)} disabled={busy} style={{
+                flex: 1, height: 48, borderRadius: 12, border: "none", cursor: "pointer",
+                background: "var(--accent)", color: "var(--accent-ink)",
+                fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 15,
+              }}>{busy ? "Starting…" : `Fill ${botsNeeded} bot${botsNeeded !== 1 ? "s" : ""} & start`}</button>
+              <button onClick={() => setBotConfirm(false)} style={{
+                height: 48, padding: "0 18px", borderRadius: 12, border: "1px solid var(--line)",
+                background: "var(--surface-2)", color: "var(--ink)", cursor: "pointer",
+                fontWeight: 600, fontSize: 14,
+              }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
         <button
-          onClick={canStart && !busy ? handleStart : undefined}
-          disabled={!canStart || busy}
+          onClick={busy ? undefined : canStart ? () => handleStart(false) : () => setBotConfirm(true)}
+          disabled={busy}
           style={{
-            width: "100%", height: 56, borderRadius: 16, border: "none", cursor: canStart ? "pointer" : "not-allowed",
+            width: "100%", height: 56, borderRadius: 16, border: "none",
+            cursor: busy ? "wait" : "pointer",
             background: canStart ? "var(--accent)" : "var(--surface-2)",
-            color: canStart ? "var(--accent-ink)" : "var(--ink-faint)",
+            color: canStart ? "var(--accent-ink)" : "var(--ink)",
             fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 17,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
             transition: "background .2s, color .2s",
           }}>
           <Icon.spark s={20} />
-          {busy ? "Starting…" : canStart ? "Start the day" : `Need ${minPlayers - view.players.length} more players`}
+          {busy ? "Starting…" : canStart ? "Start the day" : `Start anyway (${view.players.length}/${minPlayers} players)`}
         </button>
 
         <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
