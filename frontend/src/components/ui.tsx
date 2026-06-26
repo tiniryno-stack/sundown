@@ -371,8 +371,22 @@ export function LivingMini({ players, onOpen }: { players: PublicPlayer[]; onOpe
 /* ── Sheet — bottom-sheet drawer scaffold ── */
 export function Sheet({ children, onClose }: { children: ReactNode; onClose: () => void; tone?: string }) {
   return createPortal(
-    <div className="sd-fade" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-      <div className="sd-rise" onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: "10px 18px 30px", maxHeight: "86%", display: "flex", flexDirection: "column" }}>
+    <div className="sd-fade" onClick={onClose} style={{
+      position: "fixed", inset: 0, zIndex: 50,
+      background: "rgba(0,0,0,0.55)",
+      display: "flex", flexDirection: "column", justifyContent: "flex-end",
+      overflow: "hidden",
+    }}>
+      <div className="sd-rise" onClick={(e) => e.stopPropagation()} style={{
+        background: "var(--surface)",
+        borderTopLeftRadius: 28, borderTopRightRadius: 28,
+        padding: "10px 18px 30px",
+        maxHeight: "86vh",
+        width: "100%", boxSizing: "border-box", overflow: "hidden",
+        display: "flex", flexDirection: "column",
+        fontFamily: "var(--font-ui, 'Geist', system-ui, sans-serif)",
+        color: "var(--ink)",
+      }}>
         <div style={{ width: 40, height: 5, borderRadius: 999, background: "var(--line-strong)", margin: "0 auto 16px", flexShrink: 0 }} />
         {children}
       </div>
