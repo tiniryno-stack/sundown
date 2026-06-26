@@ -3,13 +3,22 @@
    Three phases: Create → Lobby → Active dashboard.
    Polls GET /games/:id/host-state every 5 s. */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { api, ApiError } from "../api";
 import { store } from "../storage";
 import { Icon, avatarColor, clockOf } from "../components/ui";
 import type { HostView } from "../types";
 
 const POLL_MS = 5000;
+
+/* ── responsive window width ─────────────────────────────── */
+function useWindowWidth(): number {
+  return useSyncExternalStore(
+    (cb) => { window.addEventListener("resize", cb); return () => window.removeEventListener("resize", cb); },
+    () => window.innerWidth,
+    () => 1280,
+  );
+}
 
 /* ── host-only icons ─────────────────────────────────────── */
 const HIcon = {
@@ -455,30 +464,35 @@ function OmniscientBadge() {
 
 /* ── HostActiveScreen ────────────────────────────────────── */
 function HostActiveScreen({ view, gameId }: { view: HostView; gameId: string }) {
+  const w = useWindowWidth();
   const frac = Math.min(1, view.nowMinute / view.finaleMinute);
+
+  // Responsive grid: 3 cols on desktop, 2 on landscape tablet, 1 on portrait/phone.
+  const gridCols = w >= 1100 ? "300px minmax(0,1fr) 280px"
+    : w >= 720 ? "260px minmax(0,1fr)"
+    : "1fr";
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B0C0E", color: "var(--ink)" }}>
       {/* sticky top bar */}
       <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--surface)",
-        borderBottom: "1px solid var(--line)", padding: "14px 22px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", rowGap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: "var(--accent)",
-              color: "var(--accent-ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon.eye s={17} />
+        borderBottom: "1px solid var(--line)", padding: "12px 16px 14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", rowGap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--accent)",
+              color: "var(--accent-ink)", display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0 }}>
+              <Icon.eye s={15} />
             </div>
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16,
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15,
                 letterSpacing: "-0.02em", lineHeight: 1 }}>Sundown</div>
-              <Mono style={{ marginTop: 3 }}>Control Room · Host</Mono>
+              <Mono style={{ marginTop: 2 }}>Host · {gameCode(gameId)} · {view.players.length}p</Mono>
             </div>
           </div>
-          <div style={{ width: 1, height: 30, background: "var(--line)" }} />
-          <Mono>{gameCode(gameId)} · {view.players.length} players · {view.phase}</Mono>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <CopyLinkButton gameId={gameId} />
-            <OmniscientBadge />
+            {w >= 600 && <OmniscientBadge />}
           </div>
         </div>
         {/* day arc */}
@@ -504,46 +518,50 @@ function HostActiveScreen({ view, gameId }: { view: HostView; gameId: string }) 
 
       {/* panels grid */}
       <div style={{ maxWidth: 1480, margin: "0 auto", display: "grid",
-        gridTemplateColumns: "320px minmax(0,1fr) 300px", gap: 16, padding: 20, alignItems: "start" }}>
-        {/* col A */}
+        gridTemplateColumns: gridCols, gap: 16, padding: 16, alignItems: "start" }}>
+        {/* col A — roster + economy */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <RosterPanel view={view} />
           <EconomyPanel view={view} />
         </div>
-        {/* col B */}
+        {/* col B — parity + bar + (on 2-col: votes + stats inline) */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {view.result && <ResultBanner result={view.result} />}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: w >= 540 ? "1fr 1fr" : "1fr", gap: 16 }}>
             <ParityWatch view={view} />
             <TownBarPanel view={view} />
           </div>
-          {/* Recent players feed */}
-          <Panel>
-            <PanelHead icon={Icon.list} title="Player activity" hint="from player feeds" />
-            <div style={{ fontSize: 13.5, color: "var(--ink-faint)", lineHeight: 1.5 }}>
-              Live event log coming soon — vote tallies, task completions, kills, and director moves
-              will appear here as they happen.
-            </div>
-          </Panel>
+          {/* On narrow layouts col C merges here */}
+          {w < 1100 && (
+            <>
+              <VotesPanel view={view} />
+              <Panel>
+                <PanelHead icon={Icon.spark} title="Round stats" />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <Stat label="Now" value={clockOf(view.nowMinute)} sub="game clock" />
+                  <Stat label="Alive" value={view.livingCount} sub={`of ${view.players.length}`} />
+                  <Stat label="Finale" value={clockOf(view.finaleMinute)} />
+                  <Stat label="Votes left" value={view.voteTimesMin.filter(v => v > view.nowMinute).length} sub="remaining" />
+                </div>
+              </Panel>
+            </>
+          )}
         </div>
-        {/* col C */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <VotesPanel view={view} />
-          {/* Quick stats */}
-          <Panel>
-            <PanelHead icon={Icon.spark} title="Round stats" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Stat label="Time elapsed" value={clockOf(view.nowMinute)} sub="game clock" />
-              <Stat label="Players alive"
-                value={view.livingCount}
-                sub={`of ${view.players.length} total`} />
-              <Stat label="Finale at" value={clockOf(view.finaleMinute)} />
-              <Stat label="Votes left"
-                value={view.voteTimesMin.filter(v => v > view.nowMinute).length}
-                sub="remaining" />
-            </div>
-          </Panel>
-        </div>
+        {/* col C — only rendered at full 3-col width */}
+        {w >= 1100 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <VotesPanel view={view} />
+            <Panel>
+              <PanelHead icon={Icon.spark} title="Round stats" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <Stat label="Now" value={clockOf(view.nowMinute)} sub="game clock" />
+                <Stat label="Alive" value={view.livingCount} sub={`of ${view.players.length}`} />
+                <Stat label="Finale" value={clockOf(view.finaleMinute)} />
+                <Stat label="Votes left" value={view.voteTimesMin.filter(v => v > view.nowMinute).length} sub="remaining" />
+              </div>
+            </Panel>
+          </div>
+        )}
       </div>
     </div>
   );

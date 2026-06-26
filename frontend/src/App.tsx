@@ -294,7 +294,7 @@ function LiveApp() {
 
   const { view, error, loading, refresh } = usePlayerView(identity);
 
-  // Tasks (fetched on load + after each completion).
+  // Tasks (fetched on load, when game goes active, and after each completion).
   const [tasks, setTasks] = useState<Task[]>([]);
   const fetchTasks = useCallback(async () => {
     if (!identity) return;
@@ -304,6 +304,10 @@ function LiveApp() {
     } catch { /* keep the last good deck */ }
   }, [identity]);
   useEffect(() => { void fetchTasks(); }, [fetchTasks]);
+  // Re-fetch when the host starts the round — tasks are generated at that moment.
+  useEffect(() => {
+    if (view?.phase === "active" && tasks.length === 0) void fetchTasks();
+  }, [view?.phase, fetchTasks, tasks.length]);
 
   // Killer suggestions (fetched when a live killer is present).
   const [suggestions, setSuggestions] = useState<string[]>([]);

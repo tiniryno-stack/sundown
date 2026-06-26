@@ -546,6 +546,19 @@ export function TasksScreen({
         An endless stream of small dares to keep the day moving. Everyone does them — which proves nothing about anyone.
       </div>
 
+      {allTasks.length === 0 && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+          padding: "48px 20px", textAlign: "center", color: "var(--ink-faint)" }}>
+          <span style={{ display: "flex", animation: "sd-breathe 3s ease-in-out infinite" }}>
+            <Icon.spark s={30} />
+          </span>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink-soft)" }}>Tasks are on their way</div>
+          <div style={{ fontSize: 13, maxWidth: 260, lineHeight: 1.5 }}>
+            The day just started — your task deck is being dealt. Check back in a moment.
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         {TIER_ORDER.map((tk) => {
           const items = allTasks.filter((t) => t.tier === tk);
