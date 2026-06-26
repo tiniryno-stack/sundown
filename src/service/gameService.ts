@@ -202,6 +202,7 @@ export class GameService {
       roundIndex: record.roundIndex,
       nowMinute: 0,
       finaleMinute: record.config.finaleMin,
+      startedAtMs: record.startedAtMs,
       you: {
         id: playerId,
         name: record.roster.find((r) => r.id === playerId)?.name ?? "?",
@@ -357,6 +358,7 @@ export class GameService {
         townCount: record.roster.length,
         nowMinute: 0,
         finaleMinute: record.config.finaleMin,
+        startedAtMs: record.startedAtMs,
         killCost: record.config.killCost,
         maxMoves: record.config.maxMoves,
         moveCharges: 0,
@@ -415,6 +417,7 @@ export class GameService {
       voteTimesMin: record.config.voteTimesMin,
       townCount: livingTown.length,
       nowMinute: m,
+      startedAtMs: record.startedAtMs,
       finaleMinute: record.config.finaleMin,
       vote: {
         open: active !== null,
@@ -573,6 +576,7 @@ export class GameService {
       roundIndex: record.roundIndex,
       nowMinute: m,
       finaleMinute: record.config.finaleMin,
+      startedAtMs: record.startedAtMs,
       you: {
         id: playerId,
         name: record.roster.find((r) => r.id === playerId)?.name ?? "?",

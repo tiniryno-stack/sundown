@@ -246,10 +246,10 @@ export function HomeScreen({
         <VoteBanner view={view} onNav={onNav} />
 
         <HudReadout items={[
-          { label: "Time of day", value: clockOf(view.nowMinute) },
+          { label: "Time of day", value: clockOf(view.nowMinute, view.startedAtMs) },
           {
             label: "Next vote",
-            value: view.vote.open ? "Open now" : view.vote.resolved ? "Closed" : nextVoteMin != null ? clockOf(nextVoteMin) : "—",
+            value: view.vote.open ? "Open now" : view.vote.resolved ? "Closed" : nextVoteMin != null ? clockOf(nextVoteMin, view.startedAtMs) : "—",
             color: view.vote.open ? "var(--bad)" : undefined,
           },
         ]} />
@@ -319,14 +319,14 @@ function ProofChip({ disabled }: { disabled?: boolean }) {
   );
 }
 
-function TaskRow({ t, now, done, onTap }: { t: Task; now: number; done?: boolean; onTap: (t: Task) => void }) {
+function TaskRow({ t, now, done, onTap, startedAtMs }: { t: Task; now: number; done?: boolean; onTap: (t: Task) => void; startedAtMs?: number }) {
   const tier = TIER_META[t.tier] ?? TIER_META.light;
   const resting = t.availableAtMinute > now;
   const covert = t.kind === "covert";
   const proof = !!t.proof;
   const tone = `var(--${tier.tone})`;
   const Glyph = covert ? Icon.eye : Icon.glass;
-  const meta = resting ? `Ready ${clockOf(t.availableAtMinute)}` : tier.label;
+  const meta = resting ? `Ready ${clockOf(t.availableAtMinute, startedAtMs)}` : tier.label;
   return (
     <div className="sd-press" onClick={resting || done ? undefined : () => onTap(t)}
       style={{
@@ -446,7 +446,7 @@ function ProofSheet({ task, onConfirm, onClose }: { task: Task; onConfirm: (answ
   );
 }
 
-function ArchiveSheet({ archive, onClose }: { archive: ArchiveItem[]; onClose: () => void }) {
+function ArchiveSheet({ archive, onClose, startedAtMs }: { archive: ArchiveItem[]; onClose: () => void; startedAtMs?: number }) {
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 4 }}>
@@ -469,7 +469,7 @@ function ArchiveSheet({ archive, onClose }: { archive: ArchiveItem[]; onClose: (
                 <span style={{ marginTop: 1, color: "var(--good)", display: "flex", flexShrink: 0 }}><Icon.check s={16} /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.28, textWrap: "pretty" }}>{a.prompt}</div>
-                  <div className="sd-mono" style={{ color: "var(--ink-faint)", marginTop: 5 }}>{(TIER_META[a.tier] ?? TIER_META.light).label}{a.kind === "covert" ? " · covert" : ""} · {clockOf(a.at)}</div>
+                  <div className="sd-mono" style={{ color: "var(--ink-faint)", marginTop: 5 }}>{(TIER_META[a.tier] ?? TIER_META.light).label}{a.kind === "covert" ? " · covert" : ""} · {clockOf(a.at, startedAtMs)}</div>
                   {a.answer &&
                     <div style={{
                       display: "flex", alignItems: "center", gap: 7, marginTop: 9, padding: "8px 11px", borderRadius: 10,
@@ -579,7 +579,7 @@ export function TasksScreen({
             <div key={tk}>
               <SectionHeader tone={m.tone} label={m.label} />
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-                {items.map((t) => <TaskRow key={t.id} t={t} now={now} done={done[t.id]} onTap={handleTap} />)}
+                {items.map((t) => <TaskRow key={t.id} t={t} now={now} done={done[t.id]} onTap={handleTap} startedAtMs={view.startedAtMs} />)}
               </div>
             </div>
           );
@@ -615,7 +615,7 @@ export function TasksScreen({
         onConfirm={() => { complete(confirmTask, null); setConfirmTask(null); }} />}
       {proofTask && <ProofSheet task={proofTask} onClose={() => setProofTask(null)}
         onConfirm={(answer) => { complete(proofTask, answer); setProofTask(null); }} />}
-      {archiveOpen && <ArchiveSheet archive={archive} onClose={() => setArchiveOpen(false)} />}
+      {archiveOpen && <ArchiveSheet archive={archive} onClose={() => setArchiveOpen(false)} startedAtMs={view.startedAtMs} />}
     </div>
   );
 }

@@ -89,6 +89,7 @@ export function buildDemoView(role: DemoRole, bar: DemoBar, phase: DemoPhase): P
     roundIndex: 0,
     nowMinute: 30,
     finaleMinute: 780,
+    startedAtMs: 0,
     bar: "healthy",
     livingCount: 7,
     players: PLAYERS.map((p) => ({ ...p })),

@@ -58,6 +58,8 @@ export interface PlayerView {
   roundIndex: number;
   nowMinute: number;
   finaleMinute: number;
+  /** Unix ms when this round started — used by clients to display real wall-clock times. */
+  startedAtMs: number;
 
   you: {
     id: string;
@@ -142,6 +144,7 @@ export interface HostView {
   townCount: number;
   nowMinute: number;
   finaleMinute: number;
+  startedAtMs: number;
   killCost: number;
   maxMoves: number;
   moveCharges: number;

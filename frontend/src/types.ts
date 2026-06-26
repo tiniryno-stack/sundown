@@ -55,6 +55,8 @@ export type PlayerView = {
   roundIndex: number;
   nowMinute: number;
   finaleMinute: number;
+  /** Unix ms when this round started — use to display real wall-clock times. */
+  startedAtMs: number;
   you: You;
   bar: Band;
   livingCount: number;
@@ -106,6 +108,7 @@ export type HostView = {
   townCount: number;
   nowMinute: number;
   finaleMinute: number;
+  startedAtMs: number;
   killCost: number;
   maxMoves: number;
   moveCharges: number;

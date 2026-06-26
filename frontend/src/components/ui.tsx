@@ -8,13 +8,24 @@ import { createPortal } from "react-dom";
 import type { Band, FeedEvent, PublicPlayer } from "../types";
 
 /* ── time helpers ───────────────────────────────────────── */
-export function clockOf(nowMinute: number): string {
-  const total = 9 * 60 + nowMinute; // day starts 9:00 AM
-  const h = Math.floor(total / 60) % 24;
-  const m = total % 60;
+/**
+ * Format a game-minute value as a wall-clock time.
+ * Pass `startedAtMs` (from PlayerView) to display real local time;
+ * omit to fall back to the legacy 9 AM fixed offset.
+ */
+export function clockOf(gameMinute: number, startedAtMs?: number): string {
+  let h: number, m: number;
+  if (startedAtMs && startedAtMs > 0) {
+    const d = new Date(startedAtMs + gameMinute * 60_000);
+    h = d.getHours();
+    m = d.getMinutes();
+  } else {
+    const total = 9 * 60 + gameMinute;
+    h = Math.floor(total / 60) % 24;
+    m = total % 60;
+  }
   const ap = h >= 12 ? "PM" : "AM";
-  let hh = h % 12;
-  if (hh === 0) hh = 12;
+  const hh = h % 12 || 12;
   return `${hh}:${String(m).padStart(2, "0")} ${ap}`;
 }
 export function vagueAgo(at: number, now: number): string {

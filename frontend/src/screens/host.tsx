@@ -387,6 +387,7 @@ function TownBarPanel({ view }: { view: HostView }) {
 /* ── VotesPanel ──────────────────────────────────────────── */
 function VotesPanel({ view }: { view: HostView }) {
   const now = view.nowMinute;
+  const s = view.startedAtMs;
   const votes = view.voteTimesMin;
   const next = votes.find(v => v > now);
   return (
@@ -430,13 +431,13 @@ function VotesPanel({ view }: { view: HostView }) {
                 fontSize: 11, fontWeight: 800,
               }}>{i + 1}</span>
               <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: "tabular-nums" }}>
-                {clockOf(v)}
+                {clockOf(v, s)}
               </span>
               <span style={{
                 marginLeft: "auto", fontSize: 11.5, fontWeight: 700,
                 color: done ? "var(--ink-faint)" : isOpen ? "var(--warn)" : isNext ? "var(--accent)" : "var(--ink-faint)",
               }}>
-                {done ? "held" : isOpen ? "open now" : isNext ? `opens ${clockOf(opensAt)}` : "scheduled"}
+                {done ? "held" : isOpen ? "open now" : isNext ? `opens ${clockOf(opensAt, s)}` : "scheduled"}
               </span>
             </div>
           );
@@ -487,7 +488,7 @@ function EconomyPanel({ view }: { view: HostView }) {
 }
 
 /* ── ResultBanner ────────────────────────────────────────── */
-function ResultBanner({ result }: { result: NonNullable<HostView["result"]> }) {
+function ResultBanner({ result, startedAtMs }: { result: NonNullable<HostView["result"]>; startedAtMs: number }) {
   const killerWin = result.winner === "killer";
   const color = killerWin ? "var(--bad)" : "var(--good)";
   const reasons: Record<string, string> = {
@@ -509,7 +510,7 @@ function ResultBanner({ result }: { result: NonNullable<HostView["result"]> }) {
           {killerWin ? "Killers win" : "Town wins"}
         </div>
         <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 2 }}>
-          {reasons[result.reason] ?? result.reason} · {clockOf(result.at)}
+          {reasons[result.reason] ?? result.reason} · {clockOf(result.at, startedAtMs)}
         </div>
       </div>
       <Mono>Roles now public</Mono>
@@ -519,13 +520,14 @@ function ResultBanner({ result }: { result: NonNullable<HostView["result"]> }) {
 
 /* ── StatsPanel ──────────────────────────────────────────── */
 function StatsPanel({ view }: { view: HostView }) {
+  const s = view.startedAtMs;
   return (
     <Panel>
       <PanelHead icon={Icon.spark} title="Round stats" />
       <div className="host-stat-grid">
-        <Stat label="Now" value={clockOf(view.nowMinute)} sub="game clock" />
+        <Stat label="Now" value={clockOf(view.nowMinute, s)} sub="game clock" />
         <Stat label="Alive" value={view.livingCount} sub={`of ${view.players.length}`} />
-        <Stat label="Finale" value={clockOf(view.finaleMinute)} />
+        <Stat label="Finale" value={clockOf(view.finaleMinute, s)} />
         <Stat label="Votes left" value={view.voteTimesMin.filter(v => v > view.nowMinute).length} sub="remaining" />
       </div>
     </Panel>
@@ -579,7 +581,7 @@ function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: s
             <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${frac * 100}%`,
               background: "var(--accent)", borderRadius: 999, transition: "width .3s ease" }} />
             {view.voteTimesMin.map(v => (
-              <span key={v} title={`Vote · ${clockOf(v)}`} style={{
+              <span key={v} title={`Vote · ${clockOf(v, view.startedAtMs)}`} style={{
                 position: "absolute", left: `${(v / view.finaleMinute) * 100}%`,
                 top: 0, bottom: 0, width: 2, marginLeft: -1,
                 background: v <= view.nowMinute ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.4)",
@@ -588,7 +590,7 @@ function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: s
           </div>
           <span style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800,
             fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", flexShrink: 0 }}>
-            {clockOf(view.nowMinute)}
+            {clockOf(view.nowMinute, view.startedAtMs)}
           </span>
         </div>
       </div>
@@ -602,7 +604,7 @@ function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: s
         </div>
         {/* col B — parity + bar + col-C content on narrow screens */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {view.result && <ResultBanner result={view.result} />}
+          {view.result && <ResultBanner result={view.result} startedAtMs={view.startedAtMs} />}
           <div className="host-stat-grid">
             <ParityWatch view={view} />
             <TownBarPanel view={view} />
