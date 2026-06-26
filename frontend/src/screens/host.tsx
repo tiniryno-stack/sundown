@@ -167,14 +167,29 @@ function ResetGameButton({ gameId, onDone }: { gameId: string; onDone: () => voi
 
 function CopyLinkButton({ gameId }: { gameId: string }) {
   const [copied, setCopied] = useState(false);
-  const copy = () => {
-    void navigator.clipboard.writeText(playerJoinUrl(gameId)).then(() => {
+  const url = playerJoinUrl(gameId);
+  const code = gameCode(gameId);
+
+  const share = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Join Sundown",
+          text: `Join the game — code ${code}`,
+          url,
+        });
+      } catch {
+        // user cancelled share sheet — no action needed
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    }
   };
+
   return (
-    <button onClick={copy} style={{
+    <button onClick={() => void share()} style={{
       display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px",
       borderRadius: 12, border: "1px solid var(--line)", cursor: "pointer",
       background: copied ? "color-mix(in oklab, var(--good) 15%, var(--surface))" : "var(--surface)",
@@ -182,7 +197,7 @@ function CopyLinkButton({ gameId }: { gameId: string }) {
       transition: "background .2s, color .2s",
     }}>
       <Icon.share s={16} />
-      {copied ? "Link copied!" : "Copy player link"}
+      {copied ? "Link copied!" : "Share player link"}
     </button>
   );
 }
