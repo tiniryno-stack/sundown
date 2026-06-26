@@ -288,6 +288,9 @@ function LiveApp() {
   const [joinBusy, setJoinBusy] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [tutorialSeen, setTutorialSeen] = useState(() => store.getTutorialSeen());
+  // ?join=SUN7DD (or just 7DD) pre-fills the code field so shared links skip typing.
+  const joinParam = new URLSearchParams(window.location.search).get("join") ?? "";
+  const initialCode = joinParam ? joinParam.toUpperCase().replace(/^SUN-?/i, "SUN") : "SUN";
 
   const { view, error, loading, refresh } = usePlayerView(identity);
 
@@ -370,7 +373,7 @@ function LiveApp() {
   if (!identity) {
     return (
       <div className="sd-root" data-theme={theme}>
-        <JoinScreen busy={joinBusy} error={joinError} onJoin={doJoin} />
+        <JoinScreen busy={joinBusy} error={joinError} onJoin={doJoin} initialCode={initialCode} />
       </div>
     );
   }

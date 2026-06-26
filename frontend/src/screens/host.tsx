@@ -100,6 +100,33 @@ function gameCode(gameId: string): string {
   return "SUN-" + gameId.replace("g_", "").slice(0, 3).toUpperCase();
 }
 
+function playerJoinUrl(gameId: string): string {
+  const code = gameCode(gameId).replace("-", "");
+  return `${window.location.origin}/?join=${code}`;
+}
+
+function CopyLinkButton({ gameId }: { gameId: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard.writeText(playerJoinUrl(gameId)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button onClick={copy} style={{
+      display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px",
+      borderRadius: 12, border: "1px solid var(--line)", cursor: "pointer",
+      background: copied ? "color-mix(in oklab, var(--good) 15%, var(--surface))" : "var(--surface)",
+      color: copied ? "var(--good)" : "var(--ink)", fontWeight: 700, fontSize: 14,
+      transition: "background .2s, color .2s",
+    }}>
+      <Icon.share s={16} />
+      {copied ? "Link copied!" : "Copy player link"}
+    </button>
+  );
+}
+
 /* ── polling hook ────────────────────────────────────────── */
 function useHostView(gameId: string | null) {
   const hostId = store.getHostId();
@@ -449,7 +476,10 @@ function HostActiveScreen({ view, gameId }: { view: HostView; gameId: string }) 
           </div>
           <div style={{ width: 1, height: 30, background: "var(--line)" }} />
           <Mono>{gameCode(gameId)} · {view.players.length} players · {view.phase}</Mono>
-          <div style={{ marginLeft: "auto" }}><OmniscientBadge /></div>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            <CopyLinkButton gameId={gameId} />
+            <OmniscientBadge />
+          </div>
         </div>
         {/* day arc */}
         <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 16 }}>
@@ -571,6 +601,9 @@ function HostLobbyScreen({
           </div>
           <div style={{ fontSize: 13, color: "var(--ink-faint)", marginTop: 8 }}>
             Players visit the app and type this code
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <CopyLinkButton gameId={gameId} />
           </div>
         </Panel>
 

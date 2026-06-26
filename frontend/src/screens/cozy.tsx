@@ -364,6 +364,39 @@ function SectionHeader({ tone, label, count }: { tone: string; label: string; co
 
 type ArchiveItem = { prompt: string; tier: Tier; kind: Task["kind"]; answer: string | null; at: number };
 
+function ConfirmSheet({ task, onConfirm, onClose }: { task: Task; onConfirm: () => void; onClose: () => void }) {
+  const tier = TIER_META[task.tier] ?? TIER_META.light;
+  const tone = `var(--${tier.tone})`;
+  const covert = task.kind === "covert";
+  const Glyph = covert ? Icon.eye : Icon.glass;
+  return (
+    <Sheet onClose={onClose}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 14 }}>
+        <span style={{
+          width: 40, height: 40, borderRadius: 12, flexShrink: 0, color: tone,
+          background: `color-mix(in oklab, ${tone} 16%, var(--surface-2))`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}><Glyph s={20} /></span>
+        <div>
+          <div className="sd-mono" style={{ color: "var(--ink-faint)" }}>Mark as complete?</div>
+          <div className="sd-title" style={{ fontSize: 16, color: "var(--ink)", lineHeight: 1.2 }}>{tier.label} task</div>
+        </div>
+      </div>
+      <div style={{ fontSize: 16, color: "var(--ink)", fontWeight: 700, lineHeight: 1.35,
+        marginBottom: 20, padding: "14px 16px", borderRadius: 14, background: "var(--surface-2)",
+        border: "1px solid var(--line)" }}>
+        {task.prompt}
+      </div>
+      <Button full onClick={onConfirm}>
+        <Icon.check s={18} /> Yes, I did this
+      </Button>
+      <div style={{ marginTop: 10 }}>
+        <Button full variant="soft" onClick={onClose}>Cancel</Button>
+      </div>
+    </Sheet>
+  );
+}
+
 function ProofSheet({ task, onConfirm, onClose }: { task: Task; onConfirm: (answer: string) => void; onClose: () => void }) {
   const [answer, setAnswer] = useState("");
   const tier = TIER_META[task.tier] ?? TIER_META.light;
@@ -464,6 +497,7 @@ export function TasksScreen({
   );
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [proofTask, setProofTask] = useState<Task | null>(null);
+  const [confirmTask, setConfirmTask] = useState<Task | null>(null);
 
   const addToArchive = useCallback((item: ArchiveItem) => {
     setArchive((a) => {
@@ -489,7 +523,7 @@ export function TasksScreen({
     if (refill) setTimeout(() => setExtra((list) => [...list, drawTask(t.tier)]), 650);
   };
 
-  const handleTap = (t: Task) => { if (t.proof) setProofTask(t); else complete(t, null); };
+  const handleTap = (t: Task) => { if (t.proof) setProofTask(t); else setConfirmTask(t); };
 
   return (
     <div className="sd-screen sd-scroll" style={{ padding: "62px 18px 30px" }}>
@@ -553,6 +587,8 @@ export function TasksScreen({
         </div>
       }
 
+      {confirmTask && <ConfirmSheet task={confirmTask} onClose={() => setConfirmTask(null)}
+        onConfirm={() => { complete(confirmTask, null); setConfirmTask(null); }} />}
       {proofTask && <ProofSheet task={proofTask} onClose={() => setProofTask(null)}
         onConfirm={(answer) => { complete(proofTask, answer); setProofTask(null); }} />}
       {archiveOpen && <ArchiveSheet archive={archive} onClose={() => setArchiveOpen(false)} />}
