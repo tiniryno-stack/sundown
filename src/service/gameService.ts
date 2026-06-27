@@ -80,10 +80,22 @@ export class GameService {
   // ===========================================================================
 
   async createGame(input: CreateGameRequest): Promise<{ gameId: string }> {
+    const RAPID_DAY_MIN = 180;   // 3 hours
+    const RAPID_VOTE_COUNT = 3;
+    const rapid = input.rapid ?? false;
+    const dayLengthMin = rapid ? RAPID_DAY_MIN : (input.dayLengthMin ?? 780);
     const config = deriveConfig({
       players: input.players,
-      dayLengthMin: input.dayLengthMin,
+      dayLengthMin,
       roles: input.roles,
+      // Rapid: override vote schedule to 3 votes evenly spread over 3 hours.
+      overrides: rapid ? {
+        voteTimesMin: (() => {
+          const first = Math.round((150 / 780) * RAPID_DAY_MIN); // ~35 min
+          const step = (RAPID_DAY_MIN - first) / (RAPID_VOTE_COUNT - 1);
+          return Array.from({ length: RAPID_VOTE_COUNT }, (_, i) => Math.round(first + i * step));
+        })(),
+      } : undefined,
     });
     const record: ServiceGameRecord = {
       id: uid("g"),

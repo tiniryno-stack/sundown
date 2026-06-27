@@ -110,6 +110,8 @@ export interface CreateGameRequest {
   dayLengthMin?: number;
   roles?: Partial<RoleFlags>;
   seed?: string;
+  /** Rapid mode: ~3 hour game with 3 votes. Overrides dayLengthMin. */
+  rapid?: boolean;
 }
 
 export interface ActionResult {

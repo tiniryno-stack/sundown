@@ -53,6 +53,7 @@ export const api = {
     dayLengthMin?: number;
     roles?: { cop?: boolean; medic?: boolean; killerCounterRole?: boolean };
     seed?: string;
+    rapid?: boolean;
   }) => post<{ gameId: string }>("/games", input),
 
   join: (gameId: string, name: string) =>

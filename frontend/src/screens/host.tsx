@@ -827,6 +827,7 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) 
   const [dayHours, setDayHours] = useState(13);
   const [cop, setCop] = useState(false);
   const [medic, setMedic] = useState(false);
+  const [rapid, setRapid] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -837,8 +838,9 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) 
       const { gameId } = await api.createGame({
         hostId: store.getHostId(),
         players,
-        dayLengthMin: dayHours * 60,
+        dayLengthMin: rapid ? 180 : dayHours * 60,
         roles: { cop, medic },
+        rapid,
       });
       store.addHostGame(gameId);
       onCreate(gameId);
@@ -895,6 +897,35 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) 
           </div>
         </div>
 
+        {/* Rapid mode card — sits above the form, full-width toggle */}
+        <div className="sd-press" onClick={() => setRapid(r => !r)} style={{
+          display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16,
+          background: rapid ? "color-mix(in oklab, var(--accent) 10%, var(--surface))" : "var(--surface)",
+          border: rapid ? "1.5px solid var(--line-strong)" : "1px solid var(--line)",
+          cursor: "pointer", transition: "background .2s, border-color .2s",
+        }}>
+          <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, display: "flex",
+            alignItems: "center", justifyContent: "center", fontSize: 22,
+            background: rapid ? "var(--accent)" : "var(--surface-2)",
+            color: rapid ? "var(--accent-ink)" : "var(--ink-faint)",
+            transition: "background .2s, color .2s" }}>
+            ⚡
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Rapid mode</div>
+            <div style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 2 }}>
+              {rapid ? "3 hours · 3 votes · faster pacing" : "~3 hr condensed game — good for testing or shorter sessions"}
+            </div>
+          </div>
+          <div style={{ width: 44, height: 26, borderRadius: 999, position: "relative", flexShrink: 0,
+            background: rapid ? "var(--accent)" : "var(--surface-2)",
+            border: "1px solid var(--line)", transition: "background .2s" }}>
+            <div style={{ position: "absolute", top: 2, left: rapid ? 20 : 2, width: 20, height: 20,
+              borderRadius: 999, background: "#fff", transition: "left .15s ease",
+              boxShadow: "0 1px 4px rgba(0,0,0,.2)" }} />
+          </div>
+        </div>
+
         <Panel>
           {row("Players",
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -905,12 +936,15 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) 
             </div>
           )}
           {row("Day length",
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {numBtn("−", () => setDayHours(h => Math.max(4, h - 1)), dayHours <= 4)}
-              <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 22,
-                minWidth: 52, textAlign: "center" }}>{dayHours}h</span>
-              {numBtn("+", () => setDayHours(h => Math.min(16, h + 1)), dayHours >= 16)}
-            </div>
+            rapid
+              ? <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 22,
+                  color: "var(--ink-faint)" }}>3h ⚡</span>
+              : <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {numBtn("−", () => setDayHours(h => Math.max(4, h - 1)), dayHours <= 4)}
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 22,
+                    minWidth: 52, textAlign: "center" }}>{dayHours}h</span>
+                  {numBtn("+", () => setDayHours(h => Math.min(16, h + 1)), dayHours >= 16)}
+                </div>
           )}
           <div style={{ borderBottom: "1px solid var(--line)", paddingBottom: 14, marginBottom: 4 }}>
             <div style={{ fontSize: 11, color: "var(--ink-faint)", fontWeight: 600, letterSpacing: "0.06em",
@@ -921,6 +955,7 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) 
           <div style={{ paddingTop: 10 }}>
             <div style={{ fontSize: 12, color: "var(--ink-faint)", lineHeight: 1.5 }}>
               Killers: ~28% of players · {Math.round(players * 0.28)} estimated
+              {rapid ? " · 3 votes at ~35, ~108, 180 min" : ""}
             </div>
           </div>
         </Panel>
