@@ -50,11 +50,21 @@ React frontend (Vite, TypeScript, no UI library — all inline styles matching `
 See `DESIGN_REQUESTS.md` for the full list. Currently pending:
 
 - **Killer task feedback + countdown** (`frontend/src/screens/cold.tsx`) — after a killer completes a task, show a brief "logged" confirmation on the task row and a "town notified in ~X min" countdown. Should feel tense, not clinical.
+- **Unified host-as-player flow** — host should be able to create a game and join as a real player in one flow (no separate `?host` tab). After creating, enter name → auto-join → player view. A discreet lock icon on the home screen → password → host dashboard overlay. Not yet built.
 
 ## Known bugs fixed recently
 
 - **Players kicked on refresh** — root cause was `?join=SUN4D6` staying in the URL. On refresh, the app saw the `join` param, cleared the stored identity, and showed the join screen. Fixed: after a successful join, the `?join=` param is stripped from the URL via `window.history.replaceState`.
 - **Rejoin flow** — if a player does get disconnected, the join screen now shows a "You were disconnected from SUN-XXX" notice with their code and name pre-filled.
+
+## Admin page
+
+- URL: `yourvercelurl/?admin` — password: `tiniryno`
+- Shows all games in Redis grouped by phase (active / lobby / finished)
+- Per-game delete + bulk "delete all dead games" button
+- Requires `ADMIN_KEY=tiniryno` set in Railway env vars (backend validates server-side)
+- Frontend: `frontend/src/screens/admin.tsx`
+- Backend: `GET /admin/games` + `POST /admin/games/:id/delete` in `src/server/http.ts`
 
 ## Commands
 
