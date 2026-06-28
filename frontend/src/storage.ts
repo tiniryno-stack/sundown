@@ -9,6 +9,7 @@ const K = {
   hostGames: "sundown.hostGames",
   tutorialSeen: "sundown.tutorialSeen",
   theme: "sundown.theme",
+  lastJoin: "sundown.lastJoin",
   votePick: (gameId: string, index: number) => `sundown.vote.${gameId}.${index}`,
   archive: (gameId: string, playerId: string) => `sundown.archive.${gameId}.${playerId}`,
 };
@@ -54,6 +55,10 @@ export const store = {
 
   getTutorialSeen: () => read<boolean>(K.tutorialSeen) ?? false,
   setTutorialSeen: (v: boolean) => write(K.tutorialSeen, v),
+
+  getLastJoin: () => read<{ name: string; code: string }>(K.lastJoin),
+  setLastJoin: (v: { name: string; code: string }) => write(K.lastJoin, v),
+  clearLastJoin: () => localStorage.removeItem(K.lastJoin),
 
   getTheme: () => read<"light" | "dark">(K.theme),
   setTheme: (t: "light" | "dark") => write(K.theme, t),

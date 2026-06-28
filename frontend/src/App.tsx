@@ -296,6 +296,7 @@ function LiveApp() {
   const [joinBusy, setJoinBusy] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [tutorialSeen, setTutorialSeen] = useState(() => store.getTutorialSeen());
+  const [disconnected, setDisconnected] = useState<{ name: string; code: string } | null>(null);
 
   const { view, error, loading, refresh } = usePlayerView(identity);
 
@@ -326,8 +327,11 @@ function LiveApp() {
   }, [identity, view?.you.killer, view?.you.isGhost, view?.nowMinute]);
 
   // Stale identity (bad creds or a wiped game) → clear it and return to Join.
+  // Preserve the last game code + name so the join screen can offer a quick rejoin.
   useEffect(() => {
     if (error === "stale identity") {
+      const last = store.getLastJoin();
+      if (last) setDisconnected(last);
       store.clearIdentity();
       setIdentity(null);
     }
@@ -344,9 +348,17 @@ function LiveApp() {
       const { playerId, token } = await api.join(gameId, name);
       const id: Identity = { gameId, playerId, token, name };
       store.setIdentity(id);
+      store.setLastJoin({ name: name.trim(), code });
+      // Strip ?join= from the URL so a refresh doesn't clear the stored identity.
+      if (joinParam) {
+        const next = new URL(window.location.href);
+        next.searchParams.delete("join");
+        window.history.replaceState({}, "", next.toString());
+      }
       // Reset tutorial flag so every new game shows the walkthrough.
       store.setTutorialSeen(false);
       setTutorialSeen(false);
+      setDisconnected(null);
       setIdentity(id);
     } catch (e) {
       setJoinError(e instanceof ApiError ? e.message : "Couldn't join — check the code and try again.");
@@ -393,7 +405,10 @@ function LiveApp() {
   if (!identity) {
     return (
       <div className="sd-root" data-theme={theme}>
-        <JoinScreen busy={joinBusy} error={joinError} onJoin={doJoin} initialCode={initialCode} />
+        <JoinScreen busy={joinBusy} error={joinError} onJoin={doJoin}
+          initialCode={disconnected?.code ?? initialCode}
+          initialName={disconnected?.name}
+          disconnected={!!disconnected} />
       </div>
     );
   }

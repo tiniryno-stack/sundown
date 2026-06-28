@@ -47,17 +47,22 @@ function CodeInput({ value, onChange }: { value: string; onChange: (v: string) =
 }
 
 export function JoinScreen({
-  temp, initialCode = "SUN", busy, error, onJoin,
+  temp, initialCode = "SUN", initialName, disconnected, busy, error, onJoin,
 }: {
   temp?: "cold" | "warm";
   initialCode?: string;
+  initialName?: string;
+  disconnected?: boolean;
   busy?: boolean;
   error?: string | null;
   onJoin: (input: { name: string; code: string }) => void;
 }) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName ?? "");
   const [code, setCode] = useState(initialCode);
   const ready = name.trim().length > 0 && code.replace(/\s/g, "").length >= 6 && !busy;
+  const displayCode = code.length >= 6
+    ? code.slice(0, 3) + "-" + code.slice(3, 6)
+    : code;
   return (
     <div className="sd-screen sd-scroll">
       <SkyHeader view={{ nowMinute: 0, finaleMinute: 780 }} temp={temp}>
@@ -71,6 +76,26 @@ export function JoinScreen({
       </SkyHeader>
 
       <div style={{ padding: "22px 18px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
+        {disconnected && (
+          <div style={{
+            display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px",
+            borderRadius: 16, background: "color-mix(in oklab, var(--warn) 10%, var(--surface))",
+            border: "1px solid color-mix(in oklab, var(--warn) 30%, transparent)",
+          }}>
+            <span style={{ color: "var(--warn)", display: "flex", flexShrink: 0, marginTop: 1 }}>
+              <Icon.alert s={18} />
+            </span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>
+                You were disconnected from {displayCode}
+              </div>
+              <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 3, lineHeight: 1.4 }}>
+                The game may still be running — tap Join below to get back in.
+              </div>
+            </div>
+          </div>
+        )}
+
         <Card raised>
           <div className="sd-eyebrow" style={{ marginBottom: 12 }}>Game code</div>
           <CodeInput value={code} onChange={setCode} />
@@ -90,7 +115,7 @@ export function JoinScreen({
         </Card>
 
         <Button onClick={ready ? () => onJoin({ name: name.trim(), code }) : undefined} disabled={!ready} full>
-          <Icon.spark s={18} /> {busy ? "Joining…" : ready ? "Join the table" : "Enter a code and name"}
+          <Icon.spark s={18} /> {busy ? "Joining…" : ready ? (disconnected ? "Rejoin the table" : "Join the table") : "Enter a code and name"}
         </Button>
 
         {error && <div style={{ textAlign: "center", color: "var(--bad)", fontSize: 13.5, fontWeight: 600 }}>{error}</div>}
