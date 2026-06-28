@@ -65,6 +65,30 @@ export function createServer(service: GameService): http.Server {
         return send(res, 200, await service.createGame(body as never));
       }
 
+      // /admin/...  — admin-only endpoints, gated by ADMIN_KEY env var
+      if (seg[0] === "admin") {
+        const adminKey = ctx.query.get("adminKey") ?? String(body.adminKey ?? "");
+        const expectedKey = process.env.ADMIN_KEY ?? "";
+        if (!expectedKey || adminKey !== expectedKey) {
+          return send(res, 403, { ok: false, error: "forbidden" });
+        }
+        // GET /admin/games — list all game summaries
+        if (seg[1] === "games" && ctx.method === "GET") {
+          const ids = await service.listGames();
+          const summaries = await Promise.all(ids.map(async (id) => {
+            const s = await service.getAdminSummary(id);
+            return s;
+          }));
+          return send(res, 200, { ok: true, games: summaries.filter(Boolean) });
+        }
+        // POST /admin/games/:id/delete — force-delete any game
+        if (seg[1] === "games" && seg[3] === "delete" && ctx.method === "POST") {
+          const result = await service.adminDeleteGame(seg[2]!);
+          return send(res, result.ok ? 200 : 400, result);
+        }
+        return send(res, 404, { ok: false, error: "not found" });
+      }
+
       // /games/:id/...
       if (seg[0] === "games" && seg.length >= 2) {
         const gameId = seg[1]!;

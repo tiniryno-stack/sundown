@@ -3,7 +3,7 @@
    (playerId, token) and host creds (hostId) ride along on every relevant call. */
 
 import type {
-  ActionResult, GameResult, HostView, KillContext, PlayerView, TasksResponse,
+  ActionResult, AdminGameSummary, GameResult, HostView, KillContext, PlayerView, TasksResponse,
 } from "./types";
 
 const BASE: string =
@@ -105,6 +105,13 @@ export const api = {
 
   getKillContext: (gameId: string, playerId: string, token: string) =>
     get<KillContext>(`/games/${gameId}/killer/context`, { playerId, token }),
+
+  // ── Admin ───────────────────────────────────────────────────────
+  getAdminGames: (adminKey: string) =>
+    get<{ ok: true; games: AdminGameSummary[] }>("/admin/games", { adminKey }),
+
+  adminDeleteGame: (gameId: string, adminKey: string) =>
+    post<ActionResult>(`/admin/games/${gameId}/delete`, { adminKey }),
 
   // ── Push (added in src/server/http.ts; see backend push module) ──
   pushPublicKey: () => get<{ key: string | null }>("/push/public-key"),

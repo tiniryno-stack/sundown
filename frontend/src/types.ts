@@ -131,3 +131,13 @@ export type Identity = {
   token: string;
   name: string;
 };
+
+export type AdminGameSummary = {
+  id: string;
+  phase: string;
+  playerCount: number;
+  players: string[];
+  startedAtMs: number;
+  result: { winner: string; reason: string; at: number } | null;
+};
+

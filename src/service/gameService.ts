@@ -496,6 +496,29 @@ export class GameService {
     return { ok: true };
   }
 
+  async adminDeleteGame(gameId: string): Promise<ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    await this.store.delete(gameId);
+    return { ok: true };
+  }
+
+  async getAdminSummary(gameId: string): Promise<{
+    id: string; phase: string; playerCount: number;
+    players: string[]; startedAtMs: number; result: unknown | null;
+  } | null> {
+    const record = await this.load(gameId);
+    if (!record) return null;
+    return {
+      id: gameId,
+      phase: record.phase,
+      playerCount: record.roster.length,
+      players: record.roster.map((p) => p.name),
+      startedAtMs: record.startedAtMs,
+      result: record.results?.[record.results.length - 1] ?? null,
+    };
+  }
+
   // ===========================================================================
   // Host: Director tick (§15)
   // ===========================================================================
