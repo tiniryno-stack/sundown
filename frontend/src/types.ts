@@ -122,6 +122,8 @@ export type HostView = {
     totalEligible: number;
   };
   result: { winner: string; reason: string; at: number } | null;
+  /** Attributed forensic log — host-only, names + roles resolved. */
+  hostLog?: Array<{ at: number; type: string; msg: string }>;
 };
 
 /* Identity stored on-device after join. */

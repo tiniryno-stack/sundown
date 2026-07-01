@@ -526,26 +526,74 @@ const EVENT_ICON: Record<string, (p: { s?: number }) => React.ReactElement> = {
   task: Icon.glass,
   witness: Icon.bell,
 };
+const LOG_TYPE_COLOR: Record<string, string> = {
+  taskCompleted: "var(--good)",
+  killActivated: "var(--bad)",
+  eliminated: "var(--bad)",
+  killBlockedByShield: "var(--good)",
+  voteTallied: "var(--warn)",
+  killerMoved: "var(--bad)",
+  killerRemoved: "var(--good)",
+  moveBanked: "var(--ink-faint)",
+  investigation: "var(--accent)",
+  shieldApplied: "var(--good)",
+  directorAdjustmentApplied: "var(--warn)",
+  gameOver: "var(--bad)",
+};
+
 function HostTimeline({ view }: { view: HostView }) {
-  const events = [...(view.events ?? [])].reverse();
+  const [showAdmin, setShowAdmin] = useState(true);
+  const adminLog = [...(view.hostLog ?? [])].reverse();
+  const publicLog = [...(view.events ?? [])].reverse();
+  const entries = showAdmin ? adminLog : publicLog;
+
   return (
-    <Panel style={{ display: "flex", flexDirection: "column", minHeight: 0, maxHeight: 420, overflow: "hidden" }}>
-      <PanelHead icon={Icon.list} title="Event log" hint={`${events.length} event${events.length !== 1 ? "s" : ""}`} />
+    <Panel style={{ display: "flex", flexDirection: "column", minHeight: 0, maxHeight: 480, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <PanelHead icon={Icon.list} title="Event log" hint={`${entries.length}`} />
+        <div style={{ display: "flex", marginLeft: "auto", gap: 3, background: "var(--surface-2)",
+          borderRadius: 8, padding: 3, border: "1px solid var(--line)", flexShrink: 0 }}>
+          {["Admin", "Players"].map(lbl => (
+            <button key={lbl} onClick={() => setShowAdmin(lbl === "Admin")} style={{
+              height: 24, padding: "0 9px", borderRadius: 5, border: "none", cursor: "pointer",
+              fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 11,
+              background: (lbl === "Admin") === showAdmin ? "var(--accent)" : "transparent",
+              color: (lbl === "Admin") === showAdmin ? "var(--accent-ink)" : "var(--ink-faint)",
+              transition: "background .15s",
+            }}>{lbl}</button>
+          ))}
+        </div>
+      </div>
       <div style={{ overflowY: "auto", flex: 1, margin: "0 -4px", paddingRight: 4 }}>
-        {events.length === 0 ? (
-          <div style={{ fontSize: 13.5, color: "var(--ink-faint)", padding: "12px 4px", lineHeight: 1.5 }}>
-            The day just began — events will appear here as the game unfolds.
+        {entries.length === 0 ? (
+          <div style={{ fontSize: 13, color: "var(--ink-faint)", padding: "12px 4px", lineHeight: 1.5 }}>
+            Nothing yet — events appear here as the game runs.
           </div>
-        ) : events.map((e, i) => {
+        ) : showAdmin ? adminLog.map((e, i) => {
+          const col = LOG_TYPE_COLOR[e.type] ?? "var(--ink-faint)";
+          return (
+            <div key={i} style={{ display: "flex", gap: 10, padding: "9px 4px",
+              borderTop: i ? "1px solid var(--line)" : "none", alignItems: "flex-start" }}>
+              <div style={{ width: 8, height: 8, borderRadius: 999, background: col,
+                flexShrink: 0, marginTop: 5 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.4, fontVariantNumeric: "tabular-nums" }}>
+                  {e.msg}
+                </div>
+                <div className="sd-mono" style={{ color: "var(--ink-faint)", marginTop: 2, fontSize: 10 }}>
+                  {e.type} · min {e.at}
+                </div>
+              </div>
+            </div>
+          );
+        }) : publicLog.map((e, i) => {
           const Ic = EVENT_ICON[e.kind] ?? Icon.spark;
-          const isWitness = e.kind === "witness";
           return (
             <div key={i} style={{ display: "flex", gap: 11, padding: "11px 4px",
               borderTop: i ? "1px solid var(--line)" : "none" }}>
               <div style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, display: "flex",
-                alignItems: "center", justifyContent: "center",
-                background: isWitness ? "color-mix(in oklab, var(--accent) 12%, var(--surface-2))" : "var(--surface-2)",
-                color: isWitness ? "var(--accent)" : "var(--ink-faint)" }}>
+                alignItems: "center", justifyContent: "center", background: "var(--surface-2)",
+                color: "var(--ink-faint)" }}>
                 <Ic s={15} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -724,11 +772,54 @@ function HostLobbyScreen({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [botConfirm, setBotConfirm] = useState(false);
+  const [botTestConfirm, setBotTestConfirm] = useState(false);
+  const [botTestBusy, setBotTestBusy] = useState(false);
   const code = gameCode(gameId);
   const minPlayers = 4;
   const canStart = view.players.length >= minPlayers;
   // Fill bots to the game's configured player count (not just the minimum).
   const botsNeeded = Math.max(0, configuredPlayers - view.players.length);
+
+  // Pre-calculate window grid for the bot test (2560×1080, taskbar ~40px).
+  const SCREEN_W = 2560, SCREEN_H = 1080, TASKBAR = 40;
+  const availH = SCREEN_H - TASKBAR;
+  const cols = 4, rows = Math.ceil(configuredPlayers / cols);
+  const winW = Math.floor(SCREEN_W / cols);
+  const winH = Math.floor(availH / rows);
+
+  const launchBotWindows = async () => {
+    setBotTestBusy(true);
+    setBotTestConfirm(false);
+    try {
+      // 1. Fill any empty slots with bots.
+      if (botsNeeded > 0) {
+        const taken = new Set(view.players.map(p => p.name));
+        const available = BOT_NAMES.filter(n => !taken.has(n));
+        for (let i = 0; i < botsNeeded; i++) {
+          await api.join(gameId, available[i] ?? `Bot ${i + 1}`);
+        }
+      }
+      // 2. Start the round.
+      await api.startRound(gameId, store.getHostId());
+      // 3. Set speed to 60×.
+      await api.setSpeed(gameId, store.getHostId(), 60);
+      // 4. Fetch credentials for all players.
+      const roster = await api.getHostRoster(gameId, store.getHostId());
+      // 5. Open one window per player — must be synchronous from this point (user gesture).
+      const base = window.location.origin;
+      roster.forEach((p, i) => {
+        const col = i % cols, row = Math.floor(i / cols);
+        const x = col * winW, y = row * winH;
+        const url = `${base}/?gid=${gameId}&pid=${encodeURIComponent(p.id)}&tok=${encodeURIComponent(p.token)}`;
+        window.open(url, `bot_${p.id}`, `width=${winW},height=${winH},left=${x},top=${y},toolbar=0,menubar=0,location=0,status=0`);
+      });
+      // 6. Transition to the active dashboard.
+      await onStart();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to launch bot test");
+      setBotTestBusy(false);
+    }
+  };
 
   const handleStart = async (withBots = false) => {
     setBusy(true);
@@ -853,6 +944,50 @@ function HostLobbyScreen({
             ? `Fill ${botsNeeded} bot${botsNeeded !== 1 ? "s" : ""} & start`
             : "Start the day"}
         </button>
+
+        {/* Bot Test — fills bots, opens windows, sets 60× speed, starts */}
+        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 16 }}>
+          <button onClick={() => setBotTestConfirm(true)} disabled={botTestBusy} style={{
+            width: "100%", height: 52, borderRadius: 14, border: "1.5px solid color-mix(in oklab, var(--warn) 50%, var(--line))",
+            cursor: botTestBusy ? "wait" : "pointer", fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 15,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+            background: "color-mix(in oklab, var(--warn) 8%, var(--surface))",
+            color: "var(--warn)",
+          }}>
+            🤖 {botTestBusy ? "Launching…" : `Bot test — ${configuredPlayers} windows · 60× speed`}
+          </button>
+          <div style={{ fontSize: 12, color: "var(--ink-faint)", marginTop: 7, textAlign: "center", lineHeight: 1.4 }}>
+            Fills bots, opens {configuredPlayers} windows on your ultrawide ({winW}×{winH} each, {cols}×{rows} grid), sets 60× speed
+          </div>
+        </div>
+
+        {botTestConfirm && (
+          <div className="sd-fade" style={{ position: "fixed", inset: 0, zIndex: 100,
+            background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div style={{ background: "var(--surface)", borderRadius: 20, padding: 24, maxWidth: 420, width: "100%",
+              border: "1px solid var(--line-strong)", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 22 }}>Launch bot test?</div>
+              <div style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.55 }}>
+                This will:<br />
+                <b style={{ color: "var(--ink)" }}>1.</b> Fill {botsNeeded > 0 ? `${botsNeeded} empty slot${botsNeeded !== 1 ? "s" : ""} with bots` : "the full roster with bots"}<br />
+                <b style={{ color: "var(--ink)" }}>2.</b> Start the game at <b style={{ color: "var(--warn)" }}>60× speed</b><br />
+                <b style={{ color: "var(--ink)" }}>3.</b> Open <b style={{ color: "var(--ink)" }}>{configuredPlayers} windows</b> ({winW}×{winH}) arranged in a {cols}×{rows} grid on your ultrawide<br /><br />
+                <span style={{ color: "var(--ink-faint)" }}>Allow popups for this site if Chrome asks. A 3-hour rapid game resolves in ~3 min.</span>
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={launchBotWindows} style={{
+                  flex: 1, height: 48, borderRadius: 12, border: "none", cursor: "pointer",
+                  background: "var(--warn)", color: "#fff",
+                  fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 15,
+                }}>🤖 Launch</button>
+                <button onClick={() => setBotTestConfirm(false)} style={{
+                  height: 48, padding: "0 18px", borderRadius: 12, border: "1px solid var(--line)",
+                  background: "var(--surface-2)", color: "var(--ink)", cursor: "pointer", fontWeight: 600, fontSize: 14,
+                }}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
           <ResetGameButton gameId={gameId} onDone={onReset} />

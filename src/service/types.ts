@@ -168,4 +168,13 @@ export interface HostView {
     totalEligible: number;
   };
   result: { winner: string; reason: string; at: number } | null;
+  /** Attributed internal log — forensic host-only feed (names + roles resolved). */
+  hostLog: Array<{ at: number; type: string; msg: string }>;
+}
+
+/** Roster entry with token — returned to host only for bot window launching. */
+export interface RosterToken {
+  id: string;
+  name: string;
+  token: string;
 }

@@ -146,6 +146,8 @@ async function dispatch(service: GameService, gameId: string, sub: string, ctx: 
       return service.botTick(gameId, host());
     case "GET host-state":
       return service.getHostState(gameId, host());
+    case "GET host-roster":
+      return service.getHostRoster(gameId, host());
     case "POST tasks/rate":
       return service.rateTask(gameId, pid(), tok(),
         String(ctx.body.taskPrompt ?? ""), (ctx.body.rating === "up" || ctx.body.rating === "down") ? ctx.body.rating : "up");

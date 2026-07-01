@@ -284,15 +284,16 @@ function DemoApp({ initial }: { initial: { role: DemoRole; bar: DemoBar; phase: 
 }
 
 /* ── LIVE app ── */
-function LiveApp() {
+function LiveApp({ urlIdentity }: { urlIdentity?: Identity } = {}) {
   const [theme, toggleTheme] = useTheme();
   const dark = theme === "dark";
   // ?join=SUN7DD pre-fills the code and forces the Join screen regardless of
   // any stored identity — the shared link targets a specific new game.
   const joinParam = new URLSearchParams(window.location.search).get("join") ?? "";
   const initialCode = joinParam ? joinParam.toUpperCase().replace(/^SUN-?/i, "SUN") : "SUN";
+  // URL-param identity (bot windows) takes precedence; never writes to localStorage.
   const [identity, setIdentity] = useState<Identity | null>(() =>
-    joinParam ? null : store.getIdentity(),
+    urlIdentity ?? (joinParam ? null : store.getIdentity()),
   );
   const [joinBusy, setJoinBusy] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -490,6 +491,11 @@ export default function App() {
         phase: (q.get("phase") as DemoPhase) || "active",
       }} />
     );
+  }
+  // ?gid=&pid=&tok= — bot window: pre-authenticated player view (no localStorage)
+  const urlGid = q.get("gid"), urlPid = q.get("pid"), urlTok = q.get("tok");
+  if (urlGid && urlPid && urlTok) {
+    return <LiveApp urlIdentity={{ gameId: urlGid, playerId: urlPid, token: urlTok, name: "" }} />;
   }
   return <LiveApp />;
 }

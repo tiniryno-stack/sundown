@@ -122,6 +122,9 @@ export const api = {
   botTick: (gameId: string, hostId: string) =>
     post<ActionResult>(`/games/${gameId}/bot-tick`, { hostId }),
 
+  getHostRoster: (gameId: string, hostId: string) =>
+    get<Array<{ id: string; name: string; token: string }>>(`/games/${gameId}/host-roster`, { hostId }),
+
   pushPublicKey: () => get<{ key: string | null }>("/push/public-key"),
 
   pushSubscribe: (gameId: string, playerId: string, token: string, subscription: unknown) =>

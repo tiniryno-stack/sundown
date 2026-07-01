@@ -480,6 +480,7 @@ export class GameService {
         voteTimesMin: record.config.voteTimesMin,
         vote: { open: false, index: null, closesAtMinute: null, totalVotes: 0, totalEligible: 0 },
         result: null,
+        hostLog: [],
       };
     }
 
@@ -543,7 +544,16 @@ export class GameService {
         totalEligible,
       },
       result: s.result,
+      hostLog: formatHostLog(s.internalLog, record.roster),
     };
+  }
+
+  /** Returns the full roster with tokens — host-only, used to launch bot windows. */
+  async getHostRoster(gameId: string, hostId: string): Promise<import("./types.js").RosterToken[] | ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    if (record.hostId !== hostId) return fail("not the host");
+    return record.roster.map(r => ({ id: r.id, name: r.name, token: r.token }));
   }
 
   // ===========================================================================
@@ -794,6 +804,67 @@ function activeVoteIndex(record: ServiceGameRecord, nowMin: number): number | nu
  * steamrolled, make resilience pricier next round; if town crushed it, ease it.
  * TODO(open-question: §17 — full adaptive tuning needs playtest data)
  */
+/** Convert raw internal log entries into readable admin-level descriptions. */
+function formatHostLog(
+  log: import("../engine/types.js").InternalLogEntry[],
+  roster: import("./types.js").RosterEntry[],
+): Array<{ at: number; type: string; msg: string }> {
+  const name = (id: unknown) => roster.find(r => r.id === id)?.name ?? String(id ?? "?");
+  const role = (r: unknown) => {
+    const map: Record<string, string> = { killer: "Killer", townsperson: "Town", cop: "Cop", medic: "Medic" };
+    return map[String(r)] ?? String(r);
+  };
+  return log.map(e => {
+    const d = e.detail;
+    let msg = "";
+    switch (e.type) {
+      case "rolesAssigned":
+        msg = `Roles assigned — ${d.players} players`; break;
+      case "roundStarted":
+        msg = `Round started — ${d.players} players`; break;
+      case "taskCompleted":
+        msg = `${name(d.playerId)} [${role(d.role)}] completed ${String(d.tier)} task — +${d.points}pt${d.group ? " (group)" : ""}${d.team === "killer" ? " → meter +" + d.points : ""}`; break;
+      case "killActivated":
+        msg = `${name(d.killerId)} [Killer] activated kill on ${name(d.targetId)} — resolves at min ${d.resolveAt}`; break;
+      case "eliminated":
+        msg = `${name(d.targetId)} eliminated — cause: ${d.cause}${d.killerId ? ` by ${name(d.killerId)}` : ""}, was ${d.previousTeam} → now ghost/killer`; break;
+      case "voteTallied":
+        msg = `Vote tallied — ${JSON.stringify(d.votes)} → eliminated: ${name(d.eliminatedId)} (resolves min ${d.resolveAt})`; break;
+      case "killerMoved":
+        msg = `Move charge used — ${name(d.caughtId)} caught → ${name(d.resurrectedId)} resurrected as killer (${d.chargesLeft} charges left)`; break;
+      case "killerRemoved":
+        msg = `${name(d.caughtId)} [Killer] permanently removed — no charges`; break;
+      case "moveBanked":
+        msg = `${name(d.killerId)} [Killer] banked a move — team now has ${d.charges} charge${d.charges !== 1 ? "s" : ""}`; break;
+      case "moveBankRequested":
+        msg = `${name(d.killerId)} [Killer] requested move bank — resolves at min ${d.resolveAt}`; break;
+      case "investigation":
+        msg = `${name(d.copId)} [Cop] investigated ${name(d.targetId)} — read: ${d.alignment}`; break;
+      case "investigationBlocked":
+        msg = `${name(d.copId)} [Cop] investigation on ${name(d.targetId)} blocked (counter-role)`; break;
+      case "investigationGranted":
+        msg = `${name(d.copId)} [Cop] received investigation charge — total: ${d.total}`; break;
+      case "shieldApplied":
+        msg = `${name(d.medicId)} [Medic] shielded ${name(d.targetId)}`; break;
+      case "shieldGranted":
+        msg = `${name(d.medicId)} [Medic] received shield charge — total: ${d.total}`; break;
+      case "killBlockedByShield":
+        msg = `Kill on ${name(d.targetId)} by ${name(d.killerId)} BLOCKED by medic shield`; break;
+      case "directorAdjustmentScheduled":
+        msg = `Director scheduled adjustment: ${JSON.stringify(d.patch)} at min ${d.applyAt}`; break;
+      case "directorAdjustmentApplied":
+        msg = `Director applied adjustment: ${JSON.stringify(d.patch)}`; break;
+      case "killerMeterApplied":
+        msg = `${name(d.killerId)} [Killer] meter applied — now ${d.meterPoints}/${d.killCost}`; break;
+      case "gameOver":
+        msg = `Game over — ${d.winner} wins by ${d.reason} at min ${d.at}`; break;
+      default:
+        msg = `${e.type}: ${JSON.stringify(d).slice(0, 120)}`;
+    }
+    return { at: e.at, type: e.type, msg };
+  });
+}
+
 export function adaptConfigFromPriorRound(prev: GameResult, config: ServiceGameRecord["config"]) {
   const next = { ...config };
   if (prev.winner === "killer") {
