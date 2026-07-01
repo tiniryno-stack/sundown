@@ -54,6 +54,7 @@ export const api = {
     roles?: { cop?: boolean; medic?: boolean; killerCounterRole?: boolean };
     seed?: string;
     rapid?: boolean;
+    timeScale?: number;
   }) => post<{ gameId: string }>("/games", input),
 
   join: (gameId: string, name: string) =>

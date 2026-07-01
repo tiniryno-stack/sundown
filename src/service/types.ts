@@ -46,6 +46,8 @@ export interface ServiceGameRecord {
   witnessNotices?: { id: string; forPlayerId: string; fromName: string; taskPrompt: string; deliverAfterMs: number }[];
   /** Player task ratings — collected for training data. */
   taskRatings?: { taskPrompt: string; rating: "up" | "down"; playerId: string; at: number }[];
+  /** Per-game time scale (1 = real time, 10 = 10× faster). Overrides the service-level default. */
+  timeScale?: number;
 }
 
 export type BarStatus = "healthy" | "strained" | "critical" | "unknown";
@@ -112,6 +114,8 @@ export interface CreateGameRequest {
   seed?: string;
   /** Rapid mode: ~3 hour game with 3 votes. Overrides dayLengthMin. */
   rapid?: boolean;
+  /** Time scale multiplier (1 = real time, 10 = 10× faster). */
+  timeScale?: number;
 }
 
 export interface ActionResult {

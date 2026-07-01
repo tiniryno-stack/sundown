@@ -113,6 +113,7 @@ export class GameService {
       resolvedVotes: [],
       startedAtMs: 0,
       results: [],
+      timeScale: input.timeScale && input.timeScale > 0 ? input.timeScale : undefined,
     };
     await this.store.save(record.id, record);
     return { gameId: record.id };
@@ -559,7 +560,8 @@ export class GameService {
 
   private nowMinute(record: ServiceGameRecord): number {
     if (record.startedAtMs === 0) return 0;
-    return Math.max(0, Math.floor(((this.now() - record.startedAtMs) / 60000) * this.timeScale));
+    const scale = record.timeScale ?? this.timeScale;
+    return Math.max(0, Math.floor(((this.now() - record.startedAtMs) / 60000) * scale));
   }
 
   /** Hydrate the engine and sync it to the wall clock: resolve due votes, apply effects. */

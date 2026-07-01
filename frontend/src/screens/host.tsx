@@ -676,10 +676,11 @@ const BOT_NAMES = ["Alex", "Morgan", "Jordan", "Quinn", "Riley", "Casey", "Drew"
 
 /* ── HostLobbyScreen ─────────────────────────────────────── */
 function HostLobbyScreen({
-  view, gameId, onStart, onReset,
+  view, gameId, configuredPlayers, onStart, onReset,
 }: {
   view: HostView;
   gameId: string;
+  configuredPlayers: number;
   onStart: () => void;
   onReset: () => void;
 }) {
@@ -689,7 +690,8 @@ function HostLobbyScreen({
   const code = gameCode(gameId);
   const minPlayers = 4;
   const canStart = view.players.length >= minPlayers;
-  const botsNeeded = Math.max(0, minPlayers - view.players.length);
+  // Fill bots to the game's configured player count (not just the minimum).
+  const botsNeeded = Math.max(0, configuredPlayers - view.players.length);
 
   const handleStart = async (withBots = false) => {
     setBusy(true);
@@ -746,7 +748,7 @@ function HostLobbyScreen({
         {/* player list */}
         <Panel>
           <PanelHead icon={Icon.users} title="Players joined"
-            hint={`${view.players.length} / need ≥ ${minPlayers}`} />
+            hint={`${view.players.length} / ${configuredPlayers} target`} />
           {view.players.length === 0 ? (
             <div style={{ textAlign: "center", padding: "24px 0", color: "var(--ink-faint)", fontSize: 13.5 }}>
               Nobody here yet — waiting for the first join…
@@ -772,14 +774,14 @@ function HostLobbyScreen({
 
         {err && <div style={{ textAlign: "center", color: "var(--bad)", fontSize: 13.5, fontWeight: 600 }}>{err}</div>}
 
-        {/* Bot fill confirmation — shown when under minimum and host tries to start */}
-        {botConfirm && !canStart && (
+        {/* Bot fill confirmation — shown when under target and host tries to start */}
+        {botConfirm && botsNeeded > 0 && (
           <div style={{ padding: "16px 18px", borderRadius: 16, background: "var(--surface)",
             border: "1px solid var(--line-strong)", display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>Only {view.players.length} player{view.players.length !== 1 ? "s" : ""} so far</div>
               <div style={{ fontSize: 13.5, color: "var(--ink-faint)", marginTop: 4, lineHeight: 1.45 }}>
-                Fill the remaining <b style={{ color: "var(--ink)" }}>{botsNeeded} spot{botsNeeded !== 1 ? "s" : ""}</b> with bots and start anyway? Good for testing.
+                Fill the remaining <b style={{ color: "var(--ink)" }}>{botsNeeded} spot{botsNeeded !== 1 ? "s" : ""}</b> with bots to reach the {configuredPlayers}-player target.
               </div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -798,8 +800,8 @@ function HostLobbyScreen({
         )}
 
         <button
-          onClick={busy ? undefined : canStart ? () => handleStart(false) : () => setBotConfirm(true)}
-          disabled={busy}
+          onClick={busy ? undefined : botsNeeded > 0 ? () => setBotConfirm(true) : () => handleStart(false)}
+          disabled={busy || !canStart && botsNeeded === 0}
           style={{
             width: "100%", height: 56, borderRadius: 16, border: "none",
             cursor: busy ? "wait" : "pointer",
@@ -810,7 +812,9 @@ function HostLobbyScreen({
             transition: "background .2s, color .2s",
           }}>
           <Icon.spark s={20} />
-          {busy ? "Starting…" : canStart ? "Start the day" : `Start anyway (${view.players.length}/${minPlayers} players)`}
+          {busy ? "Starting…" : botsNeeded > 0
+            ? `Fill ${botsNeeded} bot${botsNeeded !== 1 ? "s" : ""} & start`
+            : "Start the day"}
         </button>
 
         <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
@@ -822,14 +826,17 @@ function HostLobbyScreen({
 }
 
 /* ── HostCreateScreen ────────────────────────────────────── */
-function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) {
+function HostCreateScreen({ onCreate }: { onCreate: (gameId: string, players: number, timeScale: number) => void }) {
   const [players, setPlayers] = useState(8);
   const [dayHours, setDayHours] = useState(13);
   const [cop, setCop] = useState(false);
   const [medic, setMedic] = useState(false);
   const [rapid, setRapid] = useState(false);
+  const [simMode, setSimMode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const timeScale = simMode ? 10 : 1;
 
   const handleCreate = async () => {
     setBusy(true);
@@ -841,9 +848,10 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) 
         dayLengthMin: rapid ? 180 : dayHours * 60,
         roles: { cop, medic },
         rapid,
+        timeScale,
       });
       store.addHostGame(gameId);
-      onCreate(gameId);
+      onCreate(gameId, players, timeScale);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Failed to create game");
       setBusy(false);
@@ -921,6 +929,35 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string) => void }) 
             background: rapid ? "var(--accent)" : "var(--surface-2)",
             border: "1px solid var(--line)", transition: "background .2s" }}>
             <div style={{ position: "absolute", top: 2, left: rapid ? 20 : 2, width: 20, height: 20,
+              borderRadius: 999, background: "#fff", transition: "left .15s ease",
+              boxShadow: "0 1px 4px rgba(0,0,0,.2)" }} />
+          </div>
+        </div>
+
+        {/* Sim mode card — 10× time scale for bot testing */}
+        <div className="sd-press" onClick={() => setSimMode(s => !s)} style={{
+          display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16,
+          background: simMode ? "color-mix(in oklab, var(--warn) 12%, var(--surface))" : "var(--surface)",
+          border: simMode ? "1.5px solid color-mix(in oklab, var(--warn) 50%, var(--line))" : "1px solid var(--line)",
+          cursor: "pointer", transition: "background .2s, border-color .2s",
+        }}>
+          <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, display: "flex",
+            alignItems: "center", justifyContent: "center", fontSize: 22,
+            background: simMode ? "color-mix(in oklab, var(--warn) 20%, var(--surface-2))" : "var(--surface-2)",
+            color: simMode ? "var(--warn)" : "var(--ink-faint)",
+            transition: "background .2s, color .2s" }}>
+            🤖
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Sim mode <span style={{ color: "var(--warn)", fontSize: 13 }}>10×</span></div>
+            <div style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 2 }}>
+              {simMode ? "Game clock runs 10× faster — bots fill lobby · watch a full game in minutes" : "Speed up time for bot testing — not for real games"}
+            </div>
+          </div>
+          <div style={{ width: 44, height: 26, borderRadius: 999, position: "relative", flexShrink: 0,
+            background: simMode ? "var(--warn)" : "var(--surface-2)",
+            border: "1px solid var(--line)", transition: "background .2s" }}>
+            <div style={{ position: "absolute", top: 2, left: simMode ? 20 : 2, width: 20, height: 20,
               borderRadius: 999, background: "#fff", transition: "left .15s ease",
               boxShadow: "0 1px 4px rgba(0,0,0,.2)" }} />
           </div>
@@ -1043,11 +1080,13 @@ export function HostApp() {
 
   // If a gameId is in the URL, try to load that game directly.
   const [gameId, setGameId] = useState<string | null>(urlGameId);
+  const [configuredPlayers, setConfiguredPlayers] = useState(8);
   const { view, error, loading } = useHostView(gameId);
   // Gate: host must explicitly confirm before seeing omniscient roles.
   const [rolesConfirmed, setRolesConfirmed] = useState(false);
 
-  const handleCreate = (id: string) => {
+  const handleCreate = (id: string, players: number) => {
+    setConfiguredPlayers(players);
     setGameId(id);
     // Reflect in URL so a refresh re-connects.
     const next = new URL(window.location.href);
@@ -1105,7 +1144,7 @@ export function HostApp() {
   return (
     <div data-theme="dark" className="host-root">
       {view.phase === "lobby" ? (
-        <HostLobbyScreen view={view} gameId={gameId} onStart={handleStart} onReset={handleReset} />
+        <HostLobbyScreen view={view} gameId={gameId} configuredPlayers={configuredPlayers} onStart={handleStart} onReset={handleReset} />
       ) : !rolesConfirmed ? (
         <HostPreStartScreen view={view} gameId={gameId} onEnter={() => setRolesConfirmed(true)} onReset={handleReset} />
       ) : (
