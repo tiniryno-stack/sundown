@@ -253,9 +253,9 @@ function TeamTag({ team }: { team: string }) {
 function RosterPanel({ view }: { view: HostView }) {
   const standing = view.players.filter(p => p.alive).length;
   return (
-    <Panel>
+    <Panel style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
       <PanelHead icon={Icon.users} title="True roster" hint={`${standing} of ${view.players.length} standing`} />
-      <div>
+      <div style={{ overflowY: "auto", maxHeight: 380, margin: "0 -4px", paddingRight: 4 }}>
         {view.players.map((p, i) => {
           const alive = p.alive;
           const killer = p.team === "killer";
@@ -304,7 +304,7 @@ function RosterPanel({ view }: { view: HostView }) {
             </div>
           );
         })}
-      </div>
+        </div>
     </Panel>
   );
 }
@@ -591,10 +591,34 @@ function OmniscientBadge() {
   );
 }
 
+const SPEED_OPTIONS = [
+  { label: "1×", value: 1 },
+  { label: "5×", value: 5 },
+  { label: "10×", value: 10 },
+  { label: "60×", value: 60 },
+];
+
 /* ── HostActiveScreen ────────────────────────────────────── */
 function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: string; onReset: () => void }) {
   const w = useWindowWidth();
   const frac = Math.min(1, view.nowMinute / view.finaleMinute);
+  const hostId = store.getHostId();
+  const [speed, setSpeed] = useState(1);
+
+  // Bot tick — fires on an interval when speed > 1 to simulate player engagement.
+  useEffect(() => {
+    if (speed <= 1 || view.phase !== "active") return;
+    const interval = Math.max(800, 5000 / speed); // faster speed = more frequent ticks
+    const id = setInterval(() => {
+      void api.botTick(gameId, hostId).catch(() => {});
+    }, interval);
+    return () => clearInterval(id);
+  }, [speed, gameId, hostId, view.phase]);
+
+  const handleSpeedChange = async (val: number) => {
+    setSpeed(val);
+    await api.setSpeed(gameId, hostId, val).catch(() => {});
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B0C0E", color: "var(--ink)" }}>
@@ -615,6 +639,19 @@ function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: s
             </div>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            {/* Speed picker */}
+            <div style={{ display: "flex", alignItems: "center", gap: 3, background: "var(--surface-2)",
+              borderRadius: 10, padding: 3, border: "1px solid var(--line)" }}>
+              {SPEED_OPTIONS.map(opt => (
+                <button key={opt.value} onClick={() => void handleSpeedChange(opt.value)} style={{
+                  height: 28, padding: "0 10px", borderRadius: 7, border: "none", cursor: "pointer",
+                  fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 12.5,
+                  background: speed === opt.value ? (opt.value > 1 ? "var(--warn)" : "var(--accent)") : "transparent",
+                  color: speed === opt.value ? (opt.value > 1 ? "#fff" : "var(--accent-ink)") : "var(--ink-faint)",
+                  transition: "background .15s, color .15s",
+                }}>{opt.label}</button>
+              ))}
+            </div>
             <CopyLinkButton gameId={gameId} />
             <ResetGameButton gameId={gameId} onDone={onReset} />
             {w >= 600 && <OmniscientBadge />}

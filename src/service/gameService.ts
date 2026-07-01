@@ -218,6 +218,67 @@ export class GameService {
     return this.projectFor(record, engine, playerId);
   }
 
+  /** Change the time-scale multiplier mid-game (host only). */
+  async setSpeed(gameId: string, hostId: string, timeScale: number): Promise<ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    if (record.hostId !== hostId) return fail("not the host");
+    if (timeScale <= 0 || timeScale > 120) return fail("timeScale must be 1–120");
+    record.timeScale = timeScale;
+    await this.store.save(gameId, record);
+    return { ok: true };
+  }
+
+  /** Simulate one engagement tick for all bot players (players with no real sessions).
+   *  Each tick, bots probabilistically complete tasks, charging killers and driving the economy.
+   *  Only runs when timeScale > 1 (sim mode). */
+  async botTick(gameId: string, hostId: string): Promise<ActionResult> {
+    const record = await this.load(gameId);
+    if (!record) return fail("unknown game");
+    if (record.hostId !== hostId) return fail("not the host");
+    if (record.phase !== "active" || !record.engine) return fail("round not active");
+
+    const scale = record.timeScale ?? this.timeScale;
+    if (scale <= 1) return { ok: true }; // no-op in real time
+
+    const engine = this.syncedEngine(record);
+    const m = this.nowMinute(record);
+    const deck = record.deck ?? [];
+    if (!deck.length) { await this.store.save(gameId, record); return { ok: true }; }
+
+    // Each bot: ~1 task/hr real engagement, scaled up. Probability per tick = scale / 60.
+    const completionProb = Math.min(0.9, scale / 60);
+    for (const p of engine.state.players) {
+      if (!p.alive) continue;
+      if (Math.random() > completionProb) continue;
+      // Pick a random available task.
+      const cooldowns = record.cooldowns[p.id] ?? {};
+      const available = deck.filter(t => (cooldowns[t.id] ?? 0) <= m);
+      if (!available.length) continue;
+      const task = available[Math.floor(Math.random() * available.length)]!;
+      engine.completeTask({ playerId: p.id, tier: task.tier as import("../engine/economy.js").TaskTier, points: task.points, group: task.group });
+      // Set cooldown.
+      if (!record.cooldowns[p.id]) record.cooldowns[p.id] = {};
+      record.cooldowns[p.id]![task.id] = m + (record.config.taskCooldownMin ?? 35);
+      // Auto-kill if a killer is now charged.
+      const fresh = engine.state.players.find(pl => pl.id === p.id);
+      if (fresh && fresh.team === "killer" && fresh.meterPoints >= record.config.killCost) {
+        const living = engine.state.players.filter(pl => pl.alive && pl.id !== p.id);
+        if (living.length) {
+          const target = living[Math.floor(Math.random() * living.length)]!;
+          engine.activateKill(fresh.id, target.id);
+        }
+      }
+    }
+    if (engine.state.result && record.phase === "active") {
+      record.phase = "resolved";
+      record.results.push(engine.state.result);
+    }
+    record.engine = engine.serialize();
+    await this.store.save(gameId, record);
+    return { ok: true };
+  }
+
   async rateTask(gameId: string, playerId: string, token: string, taskPrompt: string, rating: "up" | "down"): Promise<ActionResult> {
     const record = await this.load(gameId);
     if (!record) return fail("unknown game");

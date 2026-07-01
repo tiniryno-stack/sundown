@@ -140,6 +140,10 @@ async function dispatch(service: GameService, gameId: string, sub: string, ctx: 
       return service.getKillContext(gameId, pid(), tok());
     case "POST director/tick":
       return service.runDirectorTick(gameId, host());
+    case "POST set-speed":
+      return service.setSpeed(gameId, host(), Number(ctx.body.timeScale ?? 1));
+    case "POST bot-tick":
+      return service.botTick(gameId, host());
     case "GET host-state":
       return service.getHostState(gameId, host());
     case "POST tasks/rate":

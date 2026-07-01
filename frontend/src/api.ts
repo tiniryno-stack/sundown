@@ -115,6 +115,13 @@ export const api = {
     post<ActionResult>(`/admin/games/${gameId}/delete`, { adminKey }),
 
   // ── Push (added in src/server/http.ts; see backend push module) ──
+  // ── Host-only ───────────────────────────────────────────────
+  setSpeed: (gameId: string, hostId: string, timeScale: number) =>
+    post<ActionResult>(`/games/${gameId}/set-speed`, { hostId, timeScale }),
+
+  botTick: (gameId: string, hostId: string) =>
+    post<ActionResult>(`/games/${gameId}/bot-tick`, { hostId }),
+
   pushPublicKey: () => get<{ key: string | null }>("/push/public-key"),
 
   pushSubscribe: (gameId: string, playerId: string, token: string, subscription: unknown) =>
