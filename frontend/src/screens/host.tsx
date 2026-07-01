@@ -639,34 +639,20 @@ function OmniscientBadge() {
   );
 }
 
-const SPEED_OPTIONS = [
-  { label: "1×", value: 1 },
-  { label: "5×", value: 5 },
-  { label: "10×", value: 10 },
-  { label: "60×", value: 60 },
-];
-
 /* ── HostActiveScreen ────────────────────────────────────── */
 function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: string; onReset: () => void }) {
   const w = useWindowWidth();
   const frac = Math.min(1, view.nowMinute / view.finaleMinute);
   const hostId = store.getHostId();
-  const [speed, setSpeed] = useState(1);
 
-  // Bot tick — fires on an interval when speed > 1 to simulate player engagement.
+  // Bot tick — always running when the game is active (speed is set per-game on the backend).
   useEffect(() => {
-    if (speed <= 1 || view.phase !== "active") return;
-    const interval = Math.max(800, 5000 / speed); // faster speed = more frequent ticks
+    if (view.phase !== "active") return;
     const id = setInterval(() => {
       void api.botTick(gameId, hostId).catch(() => {});
-    }, interval);
+    }, 1000);
     return () => clearInterval(id);
-  }, [speed, gameId, hostId, view.phase]);
-
-  const handleSpeedChange = async (val: number) => {
-    setSpeed(val);
-    await api.setSpeed(gameId, hostId, val).catch(() => {});
-  };
+  }, [gameId, hostId, view.phase]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B0C0E", color: "var(--ink)" }}>
@@ -687,19 +673,6 @@ function HostActiveScreen({ view, gameId, onReset }: { view: HostView; gameId: s
             </div>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {/* Speed picker */}
-            <div style={{ display: "flex", alignItems: "center", gap: 3, background: "var(--surface-2)",
-              borderRadius: 10, padding: 3, border: "1px solid var(--line)" }}>
-              {SPEED_OPTIONS.map(opt => (
-                <button key={opt.value} onClick={() => void handleSpeedChange(opt.value)} style={{
-                  height: 28, padding: "0 10px", borderRadius: 7, border: "none", cursor: "pointer",
-                  fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 12.5,
-                  background: speed === opt.value ? (opt.value > 1 ? "var(--warn)" : "var(--accent)") : "transparent",
-                  color: speed === opt.value ? (opt.value > 1 ? "#fff" : "var(--accent-ink)") : "var(--ink-faint)",
-                  transition: "background .15s, color .15s",
-                }}>{opt.label}</button>
-              ))}
-            </div>
             <CopyLinkButton gameId={gameId} />
             <ResetGameButton gameId={gameId} onDone={onReset} />
             {w >= 600 && <OmniscientBadge />}
@@ -787,38 +760,56 @@ function HostLobbyScreen({
   const winW = Math.floor(SCREEN_W / cols);
   const winH = Math.floor(availH / rows);
 
-  const launchBotWindows = async () => {
-    setBotTestBusy(true);
+  // IMPORTANT: window.open() must be called synchronously in a click handler.
+  // We open placeholder windows immediately (preserving the browser's user-gesture
+  // token), then do all the async API work and navigate each window to its bot URL.
+  const launchBotWindows = () => {
     setBotTestConfirm(false);
-    try {
-      // 1. Fill any empty slots with bots.
-      if (botsNeeded > 0) {
-        const taken = new Set(view.players.map(p => p.name));
-        const available = BOT_NAMES.filter(n => !taken.has(n));
-        for (let i = 0; i < botsNeeded; i++) {
-          await api.join(gameId, available[i] ?? `Bot ${i + 1}`);
-        }
-      }
-      // 2. Start the round.
-      await api.startRound(gameId, store.getHostId());
-      // 3. Set speed to 60×.
-      await api.setSpeed(gameId, store.getHostId(), 60);
-      // 4. Fetch credentials for all players.
-      const roster = await api.getHostRoster(gameId, store.getHostId());
-      // 5. Open one window per player — must be synchronous from this point (user gesture).
-      const base = window.location.origin;
-      roster.forEach((p, i) => {
-        const col = i % cols, row = Math.floor(i / cols);
-        const x = col * winW, y = row * winH;
-        const url = `${base}/?gid=${gameId}&pid=${encodeURIComponent(p.id)}&tok=${encodeURIComponent(p.token)}`;
-        window.open(url, `bot_${p.id}`, `width=${winW},height=${winH},left=${x},top=${y},toolbar=0,menubar=0,location=0,status=0`);
-      });
-      // 6. Transition to the active dashboard.
-      await onStart();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Failed to launch bot test");
-      setBotTestBusy(false);
+    setBotTestBusy(true);
+
+    // Step 1 — open all windows NOW, synchronously, before any awaits.
+    // Use window.screenX/Y as the base so windows land on whichever monitor
+    // the host dashboard is currently on.
+    const baseX = window.screenX;
+    const baseY = window.screenY;
+    const wins: (Window | null)[] = [];
+    for (let i = 0; i < configuredPlayers; i++) {
+      const col = i % cols, row = Math.floor(i / cols);
+      const x = baseX + col * winW;
+      const y = baseY + row * winH;
+      wins.push(window.open(
+        "about:blank",
+        `bot_${gameId}_${i}`,
+        `width=${winW},height=${winH},left=${x},top=${y},toolbar=0,menubar=0,location=0,status=0,scrollbars=0`,
+      ));
     }
+
+    // Step 2 — async: fill bots, start, set speed, fetch tokens, navigate each window.
+    void (async () => {
+      try {
+        if (botsNeeded > 0) {
+          const taken = new Set(view.players.map(p => p.name));
+          const available = BOT_NAMES.filter(n => !taken.has(n));
+          for (let i = 0; i < botsNeeded; i++) {
+            await api.join(gameId, available[i] ?? `Bot ${i + 1}`);
+          }
+        }
+        await api.startRound(gameId, store.getHostId());
+        await api.setSpeed(gameId, store.getHostId(), 60);
+        const roster = await api.getHostRoster(gameId, store.getHostId());
+        const base = window.location.origin;
+        roster.forEach((p, i) => {
+          const win = wins[i];
+          if (win && !win.closed) {
+            win.location.href = `${base}/?gid=${encodeURIComponent(gameId)}&pid=${encodeURIComponent(p.id)}&tok=${encodeURIComponent(p.token)}`;
+          }
+        });
+        await onStart();
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "Failed to launch bot test");
+        setBotTestBusy(false);
+      }
+    })();
   };
 
   const handleStart = async (withBots = false) => {
@@ -1004,11 +995,8 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string, players: nu
   const [cop, setCop] = useState(false);
   const [medic, setMedic] = useState(false);
   const [rapid, setRapid] = useState(false);
-  const [simMode, setSimMode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-
-  const timeScale = simMode ? 10 : 1;
 
   const handleCreate = async () => {
     setBusy(true);
@@ -1020,10 +1008,9 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string, players: nu
         dayLengthMin: rapid ? 180 : dayHours * 60,
         roles: { cop, medic },
         rapid,
-        timeScale,
       });
       store.addHostGame(gameId);
-      onCreate(gameId, players, timeScale);
+      onCreate(gameId, players, 1);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Failed to create game");
       setBusy(false);
@@ -1101,35 +1088,6 @@ function HostCreateScreen({ onCreate }: { onCreate: (gameId: string, players: nu
             background: rapid ? "var(--accent)" : "var(--surface-2)",
             border: "1px solid var(--line)", transition: "background .2s" }}>
             <div style={{ position: "absolute", top: 2, left: rapid ? 20 : 2, width: 20, height: 20,
-              borderRadius: 999, background: "#fff", transition: "left .15s ease",
-              boxShadow: "0 1px 4px rgba(0,0,0,.2)" }} />
-          </div>
-        </div>
-
-        {/* Sim mode card — 10× time scale for bot testing */}
-        <div className="sd-press" onClick={() => setSimMode(s => !s)} style={{
-          display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16,
-          background: simMode ? "color-mix(in oklab, var(--warn) 12%, var(--surface))" : "var(--surface)",
-          border: simMode ? "1.5px solid color-mix(in oklab, var(--warn) 50%, var(--line))" : "1px solid var(--line)",
-          cursor: "pointer", transition: "background .2s, border-color .2s",
-        }}>
-          <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, display: "flex",
-            alignItems: "center", justifyContent: "center", fontSize: 22,
-            background: simMode ? "color-mix(in oklab, var(--warn) 20%, var(--surface-2))" : "var(--surface-2)",
-            color: simMode ? "var(--warn)" : "var(--ink-faint)",
-            transition: "background .2s, color .2s" }}>
-            🤖
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Sim mode <span style={{ color: "var(--warn)", fontSize: 13 }}>10×</span></div>
-            <div style={{ fontSize: 12.5, color: "var(--ink-faint)", marginTop: 2 }}>
-              {simMode ? "Game clock runs 10× faster — bots fill lobby · watch a full game in minutes" : "Speed up time for bot testing — not for real games"}
-            </div>
-          </div>
-          <div style={{ width: 44, height: 26, borderRadius: 999, position: "relative", flexShrink: 0,
-            background: simMode ? "var(--warn)" : "var(--surface-2)",
-            border: "1px solid var(--line)", transition: "background .2s" }}>
-            <div style={{ position: "absolute", top: 2, left: simMode ? 20 : 2, width: 20, height: 20,
               borderRadius: 999, background: "#fff", transition: "left .15s ease",
               boxShadow: "0 1px 4px rgba(0,0,0,.2)" }} />
           </div>
