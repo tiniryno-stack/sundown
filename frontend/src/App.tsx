@@ -25,6 +25,7 @@ import {
 } from "./screens/cold";
 import { HostApp } from "./screens/host";
 import { AdminApp } from "./screens/admin";
+import { LandingApp } from "./screens/landing";
 
 /* ── theme ── */
 function useTheme(): ["light" | "dark", () => void] {
@@ -482,6 +483,7 @@ export default function App() {
   }
   if (q.has("admin")) return <AdminApp />;
   if (q.has("host")) return <HostApp />;
+  if (q.has("landing")) return <LandingApp />;
   const demo = q.has("demo") || q.has("role") || q.has("phase") || q.has("bar");
   if (demo) {
     return (
