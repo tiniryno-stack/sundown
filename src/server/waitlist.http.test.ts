@@ -51,15 +51,15 @@ describe("waitlist over HTTP", () => {
     expect(statuses[8]).toBe(429);
   });
 
-  it("admin view needs the key and hides emails while the key is the public one", async () => {
-    process.env.ADMIN_KEY = "tiniryno";
+  it("admin view needs the key and only shows emails with a long key", async () => {
+    process.env.ADMIN_KEY = "shortkey";
     expect((await get("/admin/waitlist?adminKey=wrong")).status).toBe(403);
-    const locked = await get("/admin/waitlist?adminKey=tiniryno");
+    const locked = await get("/admin/waitlist?adminKey=shortkey");
     expect(locked.json.count).toBeGreaterThan(0);
     expect(locked.json.entries).toBeNull();
 
-    process.env.ADMIN_KEY = "a-new-private-key";
-    const open = await get("/admin/waitlist?adminKey=a-new-private-key");
+    process.env.ADMIN_KEY = "a-long-private-key";
+    const open = await get("/admin/waitlist?adminKey=a-long-private-key");
     expect(open.json.entries[0].email).toMatch(/@example\.com$/);
   });
 });

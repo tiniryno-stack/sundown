@@ -95,10 +95,8 @@ game" to "here's the engineering behind it."
    balance design that scales with player count, the honest calibration write-up in
    `PROGRESS.md`, honor-system task completion as a design choice that eliminates an
    entire anti-cheat problem).
-5. **Links** — GitHub repo: use the plain URL `https://github.com/tiniryno-stack/sundown`
-   only. **Do not use any git remote URL that contains a token or credentials** — if you
-   ever see one in local git config, ignore it and use the plain `https://github.com/...`
-   form. Also link the live backend health check
+5. **Links** — GitHub repo: `https://github.com/tiniryno-stack/sundown`. Also link the
+   live backend health check
    (`https://sundown-backend-production.up.railway.app/health`) and leave a placeholder
    for the live frontend URL.
 6. **Closing CTA for recruiters** — a placeholder for a resume/contact link

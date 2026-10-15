@@ -110,12 +110,6 @@ src/persistence/ Store interface (Redis/File)     offline from fixtures, no back
   fill in the real `*.vercel.app` URL (or custom domain) here before using this doc
   externally.
 
-> Note: the GitHub remote URL stored locally in `.git/config` has a personal access
-> token embedded in it (`https://tiniryno-stack:ghp_...@github.com/...`). That's a local
-> credential-hygiene issue, not something to reproduce in a CV/portfolio doc — always
-> link the plain `https://github.com/...` form, and rotate that token / switch to SSH or
-> a credential manager when convenient.
-
 ## Deployed, live infrastructure
 
 - **Source control:** GitHub (`tiniryno-stack/sundown`), single repo, frontend and

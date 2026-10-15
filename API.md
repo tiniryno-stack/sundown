@@ -172,4 +172,4 @@ DirectorTickResult: {
 Public. Stores a normalized email (trimmed, lowercased) once; signing up again returns `already: true`. `source` is a short tag for where on the page they signed up (`hero`, …). `company` is a hidden honeypot field: if it's filled, the request is accepted and dropped. Invalid addresses → `400`. More than 8 attempts per visitor in 10 minutes → `429`. Nothing is ever emailed.
 
 ### `GET /admin/waitlist?adminKey=… → { ok, count, entries, locked? }`  · admin
-`entries` is newest-first `{ email, at, source }[]`. While `ADMIN_KEY` is still a key that has appeared in public files, `entries` is `null` and `locked` explains why; `count` is always returned.
+`entries` is newest-first `{ email, at, source }[]`. If `ADMIN_KEY` is shorter than 12 characters, `entries` is `null` and `locked` says so; `count` is always returned.
