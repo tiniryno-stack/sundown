@@ -66,30 +66,26 @@ const WORKFLOW = [
     title: "Design spec first",
     body: (
       <>
-        <code className="mono">game-spec.md</code> is a versioned, ratio-based design doc — with open questions
-        marked <code className="mono">[TBD]</code> rather than guessed at.
+        <code className="mono">game-spec.md</code> is a versioned design doc with balance targets, built on ratios so
+        it scales from 7 to 22 players. Open questions are marked <code className="mono">[TBD]</code> rather than
+        guessed at.
       </>
     ),
   },
   {
     n: "02",
-    title: "Autonomous backend build",
-    body: (
-      <>
-        Engine → sim harness → AI Director → deck generator → service layer → persistence, in one unsupervised pass,
-        ending in a written <code className="mono">PROGRESS.md</code>.
-      </>
-    ),
+    title: "Validated before anyone played",
+    body: "A simulation runs the real game engine thousands of times per setup. Balance modeling showed a two-vote day let killers win almost every game, so the design moved to five votes.",
   },
   {
     n: "03",
-    title: "A second, independent agent",
-    body: "Built the entire player app from only the API contract and sample payloads — no access to backend source at all.",
+    title: "Backend, then app, against a contract",
+    body: "A tested backend (engine, AI Director, task decks, API, storage), then a phone-first app built against the written API contract and sample data alone.",
   },
   {
     n: "04",
-    title: "~9 days, first commit to live",
-    body: "56 commits, ending in a deployed, phone-playable game — not a prototype that stayed a prototype.",
+    title: "Under three weeks to live",
+    body: "First deploy three days after the first commit. A full, phone-playable v1 in production in under three weeks.",
   },
 ];
 
@@ -290,8 +286,8 @@ export function LandingApp() {
         <div className="kicker">The other half of this page</div>
         <h2>That's the game. Here's how it got built.</h2>
         <p>
-          Sundown was designed and built almost entirely by Claude Code, from a written spec. The rest of this page
-          is that story.
+          Sundown is a full-stack product I designed and shipped end to end: game design, balance modeling, backend,
+          app and infrastructure. The rest of this page is how.
         </p>
       </div>
 
@@ -301,15 +297,12 @@ export function LandingApp() {
       <div className="build">
         <div className="wrap">
           <section className="build-intro">
-            <div className="kicker">Case study — AI-assisted engineering</div>
-            <h2>
-              A full-stack, end-to-end shipped product — built by Claude Code, from a written spec.
-            </h2>
+            <div className="kicker">Case study · Product and engineering</div>
+            <h2>A full-stack product, shipped end to end.</h2>
             <p>
-              Live URLs, a real database, GitHub-driven deploys, and a played, testable game — not a demo. The
-              backend was built by Claude Code in a single autonomous pass from a design spec; the frontend was
-              built by a second, independent Claude agent working from only an API contract and sample payloads.
-              It's a real example of spec-driven, multi-agent collaboration — not one long chat session.
+              Live URLs, a real database, automatic deploys, and a game you can play on your phone. It started as a
+              written design spec with balance targets, was checked in simulation, then became a tested backend and a
+              phone-first app, with an AI game director running in production.
             </p>
           </section>
         </div>
@@ -317,7 +310,7 @@ export function LandingApp() {
         {/* WORKFLOW */}
         <div className="wrap">
           <section className="build-section">
-            <h3>The actual workflow</h3>
+            <h3>How it was built</h3>
             <div className="workflow">
               {WORKFLOW.map((wf) => (
                 <div className="wf-card" key={wf.n}>
@@ -327,6 +320,7 @@ export function LandingApp() {
                 </div>
               ))}
             </div>
+            <p className="wf-meta">Built with AI coding tools working from these specs. I owned the design, the decisions and the review.</p>
           </section>
         </div>
 
@@ -478,7 +472,7 @@ export function LandingApp() {
           </section>
         </div>
 
-        <footer className="build-footer">Sundown — designed and built with Claude Code, 2026.</footer>
+        <footer className="build-footer">Sundown — designed and built by Andrew, 2026.</footer>
       </div>
     </div>
   );

@@ -39,19 +39,28 @@
 .pf-homebar { position: absolute; bottom: 8px; left: 50%; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: currentColor; opacity: 0.8; z-index: 70; pointer-events: none; }
 .pf-shield { position: absolute; inset: 0; z-index: 90; }
 
-/* finger tap */
-.pf-tap {
-  position: absolute; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%;
-  background: rgba(120, 120, 128, 0.3); border: 2px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2); z-index: 85; pointer-events: none;
-  animation: pf-tap 0.75s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+/* the app inside the phone: gentler, longer easing than the live app uses */
+.pf-app { flex: 1; min-height: 0; display: flex; flex-direction: column; animation: pf-fresh 0.6s ease both; }
+@keyframes pf-fresh { from { opacity: 0; } to { opacity: 1; } }
+.pf-screen .sd-screen { animation: sd-rise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.pf-screen .sd-rise { animation-duration: 0.6s; animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1); }
+.pf-screen .sd-fade { animation-duration: 0.45s; }
+
+/* finger: arrives, rests on the control, then presses */
+.pf-finger {
+  position: absolute; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%;
+  background: rgba(130, 130, 138, 0.26); border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22); z-index: 85; pointer-events: none;
+  animation: pf-finger-in 0.38s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+  transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1), opacity 0.45s ease 0.15s;
 }
-@keyframes pf-tap {
-  0% { transform: scale(0.4); opacity: 0; }
-  22% { transform: scale(0.92); opacity: 1; }
-  45% { transform: scale(0.78); opacity: 1; }
-  100% { transform: scale(1.6); opacity: 0; }
+.pf-finger.press { transform: scale(0.8); opacity: 0; }
+.pf-finger.press::after {
+  content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.85);
+  animation: pf-ring 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
+@keyframes pf-finger-in { from { transform: scale(1.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes pf-ring { from { transform: scale(1); opacity: 0.9; } to { transform: scale(2.1); opacity: 0; } }
 
 /* lock-screen style notification */
 .pf-push {
@@ -61,7 +70,7 @@
   -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
   font-family: 'Geist', system-ui, sans-serif;
-  animation: pf-push 3.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: pf-push 4.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 .pf-dark .pf-push { background: rgba(44, 46, 52, 0.86); color: #ECEEF1; }
 .pf-push-icon { flex: none; width: 38px; height: 38px; border-radius: 10px; background: radial-gradient(circle at 50% 62%, #F2B652 0 26%, #C9772E 48%, #3A2416 100%); }
@@ -78,7 +87,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pf-tap { animation-duration: 0.01s; }
+  .pf-finger, .pf-finger.press::after, .pf-app { animation-duration: 0.01s; }
   .pf-push { animation: none; }
 }
 
@@ -93,16 +102,17 @@
 .sd-landing .btn:focus-visible, .sd-landing .demo-btn:focus-visible, .sd-landing .seg button:focus-visible { outline: 2px solid #C9772E; outline-offset: 3px; }
 .sd-landing .hero-facts { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: 'Geist Mono', monospace; font-size: 11.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8A8278; }
 
-.sd-landing .hero-demo { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+/* fixed width: the column must not size itself to the caption, or the headline rewraps every beat */
+.sd-landing .hero-demo { display: flex; flex-direction: column; align-items: center; gap: 22px; width: 330px; flex: none; }
 .sd-landing .hero-phone { --s: 0.74; }
 
-.sd-landing .demo-cap { width: min(100%, 320px); display: flex; flex-direction: column; gap: 10px; }
+.sd-landing .demo-cap { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px; }
 .sd-landing .demo-cap-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .sd-landing .demo-clock { font-size: 13px; font-weight: 600; color: #1A1714; font-variant-numeric: tabular-nums; }
 .sd-landing .demo-tag { display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8A8278; }
 .sd-landing .demo-dot { width: 6px; height: 6px; border-radius: 50%; background: #C9772E; animation: demo-pulse 2s ease-in-out infinite; }
 @keyframes demo-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-.sd-landing .demo-text { font-size: 15px; line-height: 1.45; color: #453F38; min-height: calc(1.45em * 3); text-wrap: pretty; }
+.sd-landing .demo-text { font-size: 15px; line-height: 1.45; color: #453F38; height: calc(1.45em * 4); overflow: hidden; text-wrap: pretty; transition: opacity 0.35s ease; }
 .sd-landing .demo-bar { height: 2px; border-radius: 2px; background: #DAD5CB; overflow: hidden; }
 .sd-landing .demo-bar > div { height: 100%; background: #C9772E; transform-origin: 0 50%; transform: scaleX(0); }
 .sd-landing .demo-btn {
@@ -126,14 +136,16 @@
 .sd-landing .trio-head p { margin-top: 16px; font-size: 17px; line-height: 1.55; color: rgba(241, 238, 232, 0.66); text-wrap: pretty; }
 .sd-landing .trio-cap { max-width: 620px; margin: 44px auto 48px; text-align: center; }
 .sd-landing .trio-clock { font-size: 30px; font-weight: 600; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
-.sd-landing .trio-cap p { margin-top: 10px; font-size: 17px; line-height: 1.5; color: rgba(241, 238, 232, 0.84); min-height: 3em; text-wrap: balance; }
+.sd-landing .trio-cap p { margin-top: 10px; font-size: 17px; line-height: 1.5; color: rgba(241, 238, 232, 0.84); height: 3em; overflow: hidden; text-wrap: balance; }
+.sd-landing .cap-in { animation: cap-in 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+@keyframes cap-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 .sd-landing .trio-bar { position: relative; max-width: 520px; height: 2px; margin: 22px auto 0; border-radius: 2px; background: rgba(241, 238, 232, 0.14); }
 .sd-landing .trio-fill { position: absolute; inset: 0; background: #E3A35F; transform-origin: 0 50%; transform: scaleX(0); }
 .sd-landing .trio-tick { position: absolute; top: -3px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #2A2420; border: 1.5px solid rgba(241, 238, 232, 0.3); transition: background-color 0.3s, border-color 0.3s; }
 .sd-landing .trio-tick.on { background: #E3A35F; border-color: #E3A35F; }
 
 .sd-landing .trio-row { display: flex; justify-content: center; gap: 44px; padding: 0 24px; }
-.sd-landing .trio-item { display: flex; flex-direction: column; align-items: center; gap: 18px; transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease; }
+.sd-landing .trio-item { display: flex; flex-direction: column; align-items: center; gap: 18px; transition: opacity 0.9s ease, filter 0.9s ease, transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1); }
 .sd-landing .trio-item.is-dim { opacity: 0.5; filter: saturate(0.5); transform: scale(0.98); }
 .sd-landing .trio-phone { --s: 0.62; }
 .sd-landing .trio .pf-device { box-shadow: inset 0 0 0 1.5px #4a4743, inset 0 0 0 4px #111113, 0 50px 80px -30px rgba(0, 0, 0, 0.7); }
@@ -155,12 +167,13 @@
   .sd-landing .hero2 .sub { margin-left: auto; margin-right: auto; }
   .sd-landing .hero2 .cta-row, .sd-landing .hero-facts { justify-content: center; }
   .sd-landing .hero-phone { --s: 0.7; }
+  .sd-landing .hero-demo { width: 100%; }
 }
 @media (max-width: 820px) {
   .sd-landing .trio { padding: 64px 0 72px; }
   .sd-landing .trio-cap { margin: 32px auto 36px; }
   .sd-landing .trio-clock { font-size: 24px; }
-  .sd-landing .trio-cap p { font-size: 16px; min-height: 4.5em; }
+  .sd-landing .trio-cap p { font-size: 16px; height: 4.5em; }
   .sd-landing .trio-row {
     justify-content: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px;
     padding: 4px max(16px, calc(50% - 141px)) 12px; scrollbar-width: none;

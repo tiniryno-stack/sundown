@@ -50,7 +50,7 @@ export function HeroDemo({ mode, onMode }: { mode: "auto" | "control"; onMode: (
             <span className="mono demo-clock">{clockOf(cap.minute)}</span>
             <span className="mono demo-tag"><span className="demo-dot" />Real app · sample game</span>
           </div>
-          <p className="demo-text">{cap.text}</p>
+          <p key={caption} className="demo-text cap-in">{cap.text}</p>
           <div className="demo-bar"><div ref={progressRef} /></div>
           {reduced && !played
             ? <button type="button" className="demo-btn" onClick={() => setPlayed(true)}>Play the demo</button>
@@ -112,7 +112,7 @@ export function TrioDemo() {
         </div>
         <div className="trio-cap">
           <div className="trio-clock mono">{clockOf(cap.minute)}</div>
-          <p>{cap.text}</p>
+          <p key={caption} className="cap-in">{cap.text}</p>
           <div className="trio-bar">
             <div className="trio-fill" ref={progressRef} />
             {TRIO_SCRIPT.captions.map((c, i) => (
