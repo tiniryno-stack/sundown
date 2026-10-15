@@ -12,34 +12,8 @@ import { useState } from "react";
 import "../landing.css";
 import "../showcase/showcase.css";
 import { HeroDemo, TrioDemo } from "../showcase/Demos";
-
-const STEPS = [
-  {
-    n: "01",
-    title: "Morning kickoff",
-    body: "Roles go out in secret. About 2 in 7 people are killers — and even they don't know each other yet.",
-  },
-  {
-    n: "02",
-    title: "Tasks all day",
-    body: "An endless stream of small dares keeps everyone moving. Camouflage, not chores — doing one never clears you.",
-  },
-  {
-    n: "03",
-    title: "The bar",
-    body: "A shared meter quietly ages down all day. The group keeps it alive together, or the killers win by default.",
-  },
-  {
-    n: "04",
-    title: "Five votes",
-    body: "At meals and natural pauses, the group votes someone out. Guess right, and a killer falls... maybe.",
-  },
-  {
-    n: "05",
-    title: "Sundown",
-    body: "A caught killer doesn't always die — sometimes they move. The day ends in one last vote and the truth, all at once.",
-  },
-];
+import { HowToPlay } from "../showcase/HowToPlay";
+import { WaitlistBar, WaitlistInline } from "../showcase/Waitlist";
 
 const RULES = [
   {
@@ -178,6 +152,7 @@ export function LandingApp() {
           TRACK A — PLAY
           ============================================================ */}
       <div className="play">
+        <WaitlistBar />
         <div className="wrap">
           <nav className="playnav">
             <div className="word">
@@ -185,9 +160,9 @@ export function LandingApp() {
               Sundown
             </div>
             <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
-              <a href="#watch">Watch a round</a>
-              <a href="#how-it-works" className="hide-mobile">
-                How it plays
+              <a href="#how-to-play">How to play</a>
+              <a href="#watch" className="hide-mobile">
+                Watch a round
               </a>
               <a href="#build">The build</a>
             </div>
@@ -217,6 +192,7 @@ export function LandingApp() {
                 <span>9 AM to sundown</span>
                 <span>No one has to host</span>
               </div>
+              <WaitlistInline source="hero" />
             </div>
             <HeroDemo mode={heroMode} onMode={setHeroMode} />
           </section>
@@ -238,27 +214,13 @@ export function LandingApp() {
           </section>
         </div>
 
+        {/* HOW TO PLAY — the app's own tutorial cards + how each side wins */}
+        <div className="wrap">
+          <HowToPlay />
+        </div>
+
         {/* SAME MOMENT, THREE PHONES */}
         <TrioDemo />
-
-        {/* HOW TO PLAY */}
-        <div className="wrap">
-          <section className="steps" id="how-it-works">
-            <div className="steps-head">
-              <div className="kicker">How it plays</div>
-              <h2>One day. Five reckonings.</h2>
-            </div>
-            <div className="step-list">
-              {STEPS.map((step) => (
-                <div className="step" key={step.n}>
-                  <div className="n">{step.n}</div>
-                  <h3>{step.title}</h3>
-                  <p>{step.body}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
 
         {/* RULES THAT MAKE IT WORK */}
         <div className="wrap">

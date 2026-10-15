@@ -11,6 +11,11 @@
 
 import http from "node:http";
 import type { GameService } from "../service/gameService.js";
+import { InMemoryStore } from "../persistence/store.js";
+import { RateLimiter, Waitlist, type WaitlistEntry } from "../waitlist/waitlist.js";
+
+/** Admin keys that have appeared in public files. Waitlist emails stay hidden until ADMIN_KEY is changed. */
+const PUBLIC_ADMIN_KEYS = new Set(["tiniryno"]);
 
 /** Serialize async work per key (one in-flight op per game id). */
 class KeyedMutex {
@@ -40,8 +45,13 @@ function cred(ctx: Ctx, key: string): string {
   return String(ctx.body[key] ?? ctx.query.get(key) ?? "");
 }
 
-export function createServer(service: GameService): http.Server {
+export function createServer(
+  service: GameService,
+  opts: { waitlist?: Waitlist } = {},
+): http.Server {
   const mutex = new KeyedMutex();
+  const waitlist = opts.waitlist ?? new Waitlist(new InMemoryStore<WaitlistEntry>());
+  const signupLimiter = new RateLimiter(8, 10 * 60_000); // per visitor: 8 signups / 10 min
 
   return http.createServer(async (req, res) => {
     setCors(res);
@@ -65,12 +75,33 @@ export function createServer(service: GameService): http.Server {
         return send(res, 200, await service.createGame(body as never));
       }
 
+      // POST /waitlist  — public: { email, source?, company? } (company is a bot honeypot)
+      if (seg.length === 1 && seg[0] === "waitlist" && ctx.method === "POST") {
+        if (String(body.company ?? "").trim()) return send(res, 200, { ok: true, already: false });
+        const fwd = String(req.headers["x-forwarded-for"] ?? "").split(",")[0]!.trim();
+        const visitor = fwd || req.socket.remoteAddress || "unknown";
+        if (!signupLimiter.allow(visitor)) return send(res, 429, { ok: false, error: "Too many tries. Try again in a few minutes." });
+        const result = await waitlist.join(body.email, body.source);
+        return send(res, result.ok ? 200 : 400, result);
+      }
+
       // /admin/...  — admin-only endpoints, gated by ADMIN_KEY env var
       if (seg[0] === "admin") {
         const adminKey = ctx.query.get("adminKey") ?? String(body.adminKey ?? "");
         const expectedKey = process.env.ADMIN_KEY ?? "";
         if (!expectedKey || adminKey !== expectedKey) {
           return send(res, 403, { ok: false, error: "forbidden" });
+        }
+        // GET /admin/waitlist — signup count, plus the addresses once ADMIN_KEY is private
+        if (seg[1] === "waitlist" && ctx.method === "GET") {
+          const count = await waitlist.count();
+          if (PUBLIC_ADMIN_KEYS.has(expectedKey)) {
+            return send(res, 200, {
+              ok: true, count, entries: null,
+              locked: "Email addresses are hidden until ADMIN_KEY is changed in Railway (the current one is public).",
+            });
+          }
+          return send(res, 200, { ok: true, count, entries: await waitlist.entries() });
         }
         // GET /admin/games — list all game summaries
         if (seg[1] === "games" && ctx.method === "GET") {

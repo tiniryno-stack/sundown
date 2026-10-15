@@ -18,6 +18,7 @@ import { FileStore } from "../persistence/fileStore.js";
 import { RedisStore } from "../persistence/redisStore.js";
 import { InMemoryStore } from "../persistence/store.js";
 import type { ServiceGameRecord } from "../service/types.js";
+import { Waitlist, type WaitlistEntry } from "../waitlist/waitlist.js";
 import { createServer } from "./http.js";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -40,8 +41,15 @@ const store = useRedis
     ? new FileStore<ServiceGameRecord>(path.join("data", "games"))
     : new InMemoryStore<ServiceGameRecord>();
 
+// Landing-page waitlist: same backing store as games, separate keys/folder.
+const waitlistStore = useRedis
+  ? new RedisStore<WaitlistEntry>(undefined, undefined, { recordPrefix: "sundown:waitlist:", indexKey: "sundown:waitlist" })
+  : useFile
+    ? new FileStore<WaitlistEntry>(path.join("data", "waitlist"))
+    : new InMemoryStore<WaitlistEntry>();
+
 const service = new GameService(store, { timeScale });
-const server = createServer(service);
+const server = createServer(service, { waitlist: new Waitlist(waitlistStore) });
 
 server.listen(port, () => {
   console.log(`[server] listening on http://localhost:${port}`);

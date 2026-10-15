@@ -163,3 +163,13 @@ DirectorTickResult: {
 - Cop/Medic UI render on `you.cop` / `you.medic`. Their exact powers/uses are a §17.1 open question — treat counts as opaque.
 - Vote UI opens when `vote.open` is true and closes at `vote.closesAtMinute`.
 - All player-to-player communication happens **outside** the app (§1). The backend has no messaging endpoints, by design.
+
+---
+
+## Landing page waitlist
+
+### `POST /waitlist` `{ email, source?, company? } → { ok, already }`
+Public. Stores a normalized email (trimmed, lowercased) once; signing up again returns `already: true`. `source` is a short tag for where on the page they signed up (`hero`, …). `company` is a hidden honeypot field: if it's filled, the request is accepted and dropped. Invalid addresses → `400`. More than 8 attempts per visitor in 10 minutes → `429`. Nothing is ever emailed.
+
+### `GET /admin/waitlist?adminKey=… → { ok, count, entries, locked? }`  · admin
+`entries` is newest-first `{ email, at, source }[]`. While `ADMIN_KEY` is still a key that has appeared in public files, `entries` is `null` and `locked` explains why; `count` is always returned.

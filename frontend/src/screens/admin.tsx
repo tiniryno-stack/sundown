@@ -1,13 +1,17 @@
 /* Sundown — Super-admin page (?admin).
-   Password-gated. Shows all games across Redis, lets you delete dead ones.
-   Only Andrew knows this URL exists. */
+   Password-gated: the server checks the password against the ADMIN_KEY env
+   var in Railway, so nothing secret lives in this file. Shows the landing page
+   waitlist and all games in Redis, and lets you delete dead ones. */
 
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../api";
 import { Icon } from "../components/ui";
 import type { AdminGameSummary } from "../types";
 
-const ADMIN_KEY = "tiniryno";
+const KEY_STORAGE = "sundown.adminKey";
+function savedKey(): string {
+  try { return sessionStorage.getItem(KEY_STORAGE) ?? ""; } catch { return ""; }
+}
 
 function gameCode(id: string) {
   return "SUN-" + id.replace("g_", "").slice(0, 3).toUpperCase();
@@ -31,14 +35,14 @@ const PHASE_COLOR: Record<string, string> = {
   resolved: "var(--accent)",
 };
 
-function GameRow({ game, onDelete }: { game: AdminGameSummary; onDelete: () => void }) {
+function GameRow({ game, adminKey, onDelete }: { game: AdminGameSummary; adminKey: string; onDelete: () => void }) {
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const doDelete = async () => {
     setBusy(true);
     try {
-      await api.adminDeleteGame(game.id, ADMIN_KEY);
+      await api.adminDeleteGame(game.id, adminKey);
       onDelete();
     } catch {
       setBusy(false);
@@ -111,7 +115,57 @@ function GameRow({ game, onDelete }: { game: AdminGameSummary; onDelete: () => v
   );
 }
 
-function AdminDashboard() {
+type WaitlistData = Awaited<ReturnType<typeof api.getAdminWaitlist>>;
+
+function WaitlistPanel({ adminKey }: { adminKey: string }) {
+  const [data, setData] = useState<WaitlistData | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    api.getAdminWaitlist(adminKey).then(setData).catch((e) => setErr(e instanceof ApiError ? e.message : "Failed to load"));
+  }, [adminKey]);
+
+  const copy = async () => {
+    if (!data?.entries) return;
+    try {
+      await navigator.clipboard.writeText(data.entries.map((e) => e.email).join("\n"));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard blocked */ }
+  };
+
+  return (
+    <div style={{ marginBottom: 32, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 16, padding: "18px 18px 14px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-faint)" }}>Landing page waitlist</div>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 34, letterSpacing: "-0.02em", marginTop: 4 }}>
+            {data ? data.count : "—"} <span style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-soft)" }}>{data?.count === 1 ? "signup" : "signups"}</span>
+          </div>
+        </div>
+        {data?.entries && data.entries.length > 0 && (
+          <button onClick={() => void copy()} style={{ height: 34, padding: "0 12px", borderRadius: 10, border: "1px solid var(--line)", background: "transparent", color: "var(--ink)", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            {copied ? "Copied" : "Copy all emails"}
+          </button>
+        )}
+      </div>
+      {err && <div style={{ marginTop: 10, color: "var(--bad)", fontSize: 13, fontWeight: 600 }}>{err}</div>}
+      {data?.locked && <div style={{ marginTop: 10, color: "var(--warn)", fontSize: 13, lineHeight: 1.5 }}>{data.locked}</div>}
+      {data?.entries && data.entries.length > 0 && (
+        <div style={{ marginTop: 12, maxHeight: 260, overflowY: "auto", borderTop: "1px solid var(--line)" }}>
+          {data.entries.map((e) => (
+            <div key={e.email} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 2px", borderBottom: "1px solid var(--line)", fontSize: 13.5 }}>
+              <span style={{ color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis" }}>{e.email}</span>
+              <span style={{ color: "var(--ink-faint)", whiteSpace: "nowrap" }}>{e.source} · {new Date(e.at).toLocaleDateString()}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminDashboard({ adminKey }: { adminKey: string }) {
   const [games, setGames] = useState<AdminGameSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +173,7 @@ function AdminDashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.getAdminGames(ADMIN_KEY);
+      const res = await api.getAdminGames(adminKey);
       const sorted = [...res.games].sort((a, b) => b.startedAtMs - a.startedAtMs);
       setGames(sorted);
       setError(null);
@@ -128,7 +182,7 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [adminKey]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -138,7 +192,7 @@ function AdminDashboard() {
   const resolved = byPhase("resolved");
 
   const deleteAll = async (ids: string[]) => {
-    await Promise.all(ids.map(id => api.adminDeleteGame(id, ADMIN_KEY).catch(() => {})));
+    await Promise.all(ids.map(id => api.adminDeleteGame(id, adminKey).catch(() => {})));
     void load();
   };
 
@@ -177,6 +231,8 @@ function AdminDashboard() {
           </div>
         </div>
 
+        <WaitlistPanel adminKey={adminKey} />
+
         {loading && (
           <div style={{ textAlign: "center", padding: 48, color: "var(--ink-faint)" }}>
             <span style={{ display: "inline-flex", animation: "sd-breathe 2s ease-in-out infinite" }}>
@@ -203,7 +259,7 @@ function AdminDashboard() {
               Active ({active.length})
             </div>
             <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden" }}>
-              {active.map(g => <GameRow key={g.id} game={g} onDelete={() => void load()} />)}
+              {active.map(g => <GameRow key={g.id} game={g} adminKey={adminKey} onDelete={() => void load()} />)}
             </div>
           </div>
         )}
@@ -216,7 +272,7 @@ function AdminDashboard() {
               Lobbies — never started ({lobbies.length})
             </div>
             <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden" }}>
-              {lobbies.map(g => <GameRow key={g.id} game={g} onDelete={() => void load()} />)}
+              {lobbies.map(g => <GameRow key={g.id} game={g} adminKey={adminKey} onDelete={() => void load()} />)}
             </div>
           </div>
         )}
@@ -229,7 +285,7 @@ function AdminDashboard() {
               Finished ({resolved.length})
             </div>
             <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden" }}>
-              {resolved.map(g => <GameRow key={g.id} game={g} onDelete={() => void load()} />)}
+              {resolved.map(g => <GameRow key={g.id} game={g} adminKey={adminKey} onDelete={() => void load()} />)}
             </div>
           </div>
         )}
@@ -238,17 +294,24 @@ function AdminDashboard() {
   );
 }
 
-function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
+function PasswordGate({ onUnlock }: { onUnlock: (key: string) => void }) {
   const [pw, setPw] = useState("");
   const [wrong, setWrong] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const submit = () => {
-    if (pw === ADMIN_KEY) {
-      onUnlock();
-    } else {
+  // The server is the judge: a key is right only if it can read /admin/games.
+  const submit = async () => {
+    if (!pw || busy) return;
+    setBusy(true);
+    try {
+      await api.getAdminGames(pw);
+      onUnlock(pw);
+    } catch {
       setWrong(true);
       setPw("");
       setTimeout(() => setWrong(false), 1200);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -265,7 +328,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
           type="password"
           value={pw}
           onChange={e => setPw(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter") submit(); }}
+          onKeyDown={e => { if (e.key === "Enter") void submit(); }}
           autoFocus
           placeholder="Password"
           style={{
@@ -281,7 +344,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
             Wrong password
           </div>
         )}
-        <button onClick={submit} style={{
+        <button onClick={() => void submit()} disabled={busy} style={{
           height: 52, borderRadius: 14, border: "none", cursor: "pointer",
           background: "var(--accent)", color: "var(--accent-ink)",
           fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 16,
@@ -294,10 +357,14 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
 }
 
 export function AdminApp() {
-  const [unlocked, setUnlocked] = useState(false);
+  const [key, setKey] = useState(savedKey);
+  const unlock = (k: string) => {
+    try { sessionStorage.setItem(KEY_STORAGE, k); } catch { /* fine */ }
+    setKey(k);
+  };
   return (
     <div data-theme="dark" className="host-root">
-      {unlocked ? <AdminDashboard /> : <PasswordGate onUnlock={() => setUnlocked(true)} />}
+      {key ? <AdminDashboard adminKey={key} /> : <PasswordGate onUnlock={unlock} />}
     </div>
   );
 }
