@@ -5,9 +5,13 @@
 // Styles live in ../landing.css, scoped entirely under .sd-landing.
 //
 // Two explicit TODOs carried over from the design handoff (search "TODO(site-brief)"):
-//   1. #todo-demo-url    — final public demo URL (now: this same origin + "?demo")
-//   2. #todo-contact-link — Andrew's resume/contact link
+//   1. The hero and "three phones" demos run the REAL app screens on a script
+//      (src/showcase/*) — no screenshots, no video.
+//   2. Contact link — still to come; the closing CTA points at GitHub for now.
+import { useState } from "react";
 import "../landing.css";
+import "../showcase/showcase.css";
+import { HeroDemo, TrioDemo } from "../showcase/Demos";
 
 const STEPS = [
   {
@@ -35,14 +39,6 @@ const STEPS = [
     title: "Sundown",
     body: "A caught killer doesn't always die — sometimes they move. The day ends in one last vote and the truth, all at once.",
   },
-];
-
-const SHOTS = [
-  { src: "/images/land-home.png", alt: "Home screen", title: "Home", caption: "A banded mood, never a number" },
-  { src: "/images/land-tasks.png", alt: "Tasks screen", title: "Tasks", caption: "Camouflage for everyone" },
-  { src: "/images/land-vote.png", alt: "Vote screen", title: "A reckoning", caption: "One name, no takebacks" },
-  { src: "/images/land-killer.png", alt: "Killer tools screen", title: "The quiet work", caption: "Killer-only tools" },
-  { src: "/images/land-over.png", alt: "Game over screen", title: "Sundown", caption: "The only reveal you get" },
 ];
 
 const RULES = [
@@ -174,6 +170,12 @@ const DETAILS = [
 ];
 
 export function LandingApp() {
+  const [heroMode, setHeroMode] = useState<"auto" | "control">("auto");
+  const takeControl = () => {
+    setHeroMode("control");
+    const el = document.getElementById("demo");
+    if (el && el.getBoundingClientRect().top > window.innerHeight * 0.5) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   return (
     <div className="sd-landing">
       {/* ============================================================
@@ -187,6 +189,7 @@ export function LandingApp() {
               Sundown
             </div>
             <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
+              <a href="#watch">Watch a round</a>
               <a href="#how-it-works" className="hide-mobile">
                 How it plays
               </a>
@@ -195,28 +198,31 @@ export function LandingApp() {
           </nav>
         </div>
 
-        {/* HERO */}
+        {/* HERO — copy + the real app playing itself */}
         <div className="wrap">
-          <section className="hero">
-            <div className="kicker">An all-day social deduction game</div>
-            <h1>
-              Everyone makes it to sundown.
-              <br />
-              Probably.
-            </h1>
-            <p className="sub">
-              A hidden-role party game for 7–22 people that runs quietly in your pocket from breakfast to nightcap —
-              while the real game happens face to face.
-            </p>
-            <div className="cta-row">
-              {/* TODO(site-brief): final public demo URL is this same deployment's ?demo */}
-              <a className="btn btn-primary" href="?demo">
-                Try the demo
-              </a>
-              <a className="btn btn-secondary" href="#how-it-works">
-                See how it works
-              </a>
+          <section className="hero2">
+            <div className="hero2-copy">
+              <div className="kicker">An all-day social deduction game</div>
+              <h1>Everyone makes it to sundown. Probably.</h1>
+              <p className="sub">
+                A hidden-role party game for 7–22 people that runs quietly in your pocket from breakfast to nightcap,
+                while the real game happens face to face.
+              </p>
+              <div className="cta-row">
+                <button type="button" className="btn btn-primary" onClick={takeControl}>
+                  Try it yourself
+                </button>
+                <a className="btn btn-secondary" href="#watch">
+                  Watch a round
+                </a>
+              </div>
+              <div className="hero-facts">
+                <span>7–22 players</span>
+                <span>9 AM to sundown</span>
+                <span>No one has to host</span>
+              </div>
             </div>
+            <HeroDemo mode={heroMode} onMode={setHeroMode} />
           </section>
         </div>
 
@@ -236,6 +242,9 @@ export function LandingApp() {
           </section>
         </div>
 
+        {/* SAME MOMENT, THREE PHONES */}
+        <TrioDemo />
+
         {/* HOW TO PLAY */}
         <div className="wrap">
           <section className="steps" id="how-it-works">
@@ -249,29 +258,6 @@ export function LandingApp() {
                   <div className="n">{step.n}</div>
                   <h3>{step.title}</h3>
                   <p>{step.body}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {/* SCREENSHOT GALLERY */}
-        <div className="wrap">
-          <section className="gallery">
-            <div className="gallery-head">
-              <h2>The real app</h2>
-              <p>Actual screens from the player app — not mockups.</p>
-            </div>
-            <div className="shots">
-              {SHOTS.map((shot) => (
-                <div className="shot" key={shot.title}>
-                  <div className="device">
-                    <img src={shot.src} alt={shot.alt} />
-                  </div>
-                  <div className="cap">
-                    <b>{shot.title}</b>
-                    <span>{shot.caption}</span>
-                  </div>
                 </div>
               ))}
             </div>
@@ -468,12 +454,12 @@ export function LandingApp() {
                 </div>
                 <span className="arrow">→</span>
               </a>
-              <a className="link-card" href="?demo">
+              <a className="link-card" href="#demo">
                 <div>
-                  <div className="t">Live app</div>
-                  <div className="u">this deployment · ?demo</div>
+                  <div className="t">Play the demo</div>
+                  <div className="u">top of this page</div>
                 </div>
-                <span className="arrow">→</span>
+                <span className="arrow">↑</span>
               </a>
             </div>
           </section>
@@ -482,11 +468,11 @@ export function LandingApp() {
         {/* CLOSING RECRUITER CTA */}
         <div className="wrap">
           <section className="closing">
-            <h3>Want to talk about how this was built — or about a role?</h3>
+            <h3>Want to see how it was built, or play a round with your group?</h3>
             <div className="cta-row" style={{ justifyContent: "center" }}>
-              {/* TODO(site-brief): #todo-contact-link — Andrew's resume/contact link */}
-              <a className="btn btn-dark" href="#todo-contact-link">
-                Get in touch <span className="todo-badge-dark">todo</span>
+              {/* TODO: swap in Andrew's contact / resume link once it exists */}
+              <a className="btn btn-dark" href="https://github.com/tiniryno-stack/sundown" target="_blank" rel="noopener">
+                See the code on GitHub
               </a>
             </div>
           </section>

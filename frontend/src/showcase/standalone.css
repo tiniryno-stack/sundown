@@ -1,0 +1,4 @@
+/* Standalone page only: the landing page is one committed look (warm day,
+   dark dusk band, dark build section), so pin the page ground explicitly. */
+html, body { background: #F1EEE8 !important; color: #1A1714; }
+html, body, #root { height: auto; min-height: 100%; }
