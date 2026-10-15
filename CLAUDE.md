@@ -6,7 +6,7 @@ All scheming happens out loud; the app is an ambient instrument panel, not a cha
 
 ## Project state
 
-**Backend** — complete and deployed on Railway. 80 tests pass. See `PROGRESS.md` for full detail.
+**Backend** — complete and deployed on Railway. 95 tests pass. See `PROGRESS.md` for full detail.
 **Frontend** — complete and deployed on Vercel. All screens built and wired to the live backend.
 **Persistence** — Upstash Redis (already configured in Railway env vars). Game state survives container restarts.
 
@@ -18,6 +18,8 @@ All scheming happens out loud; the app is an ambient instrument panel, not a cha
 | Backend API contract | `API.md` |
 | Backend build status + decisions | `PROGRESS.md` |
 | Pending design/UI requests | `DESIGN_REQUESTS.md` |
+| Product notes, ideas, landing page plan | `docs/` (start with `docs/README.md`) |
+| Landing page | `frontend/src/screens/landing.tsx` + `frontend/src/showcase/` |
 | Player app | `frontend/src/` |
 | Host dashboard | `frontend/src/screens/host.tsx` |
 | Player screens (warm) | `frontend/src/screens/cozy.tsx` |
@@ -31,8 +33,9 @@ React frontend (Vite, TypeScript, no UI library — all inline styles matching `
 
 ## Deployment
 
-- **Frontend:** Vercel — auto-deploys from `main`
-- **Backend:** Railway — auto-deploys from `main`, `npm run serve`
+- **Frontend:** Vercel — auto-deploys from `master`; every PR gets a preview deploy
+- **Backend:** Railway — auto-deploys from `master`, `npm run serve`
+- **Workflow:** branch → PR → merge to `master` (Andrew merges). Small fixes can go straight to `master` if he says so.
 - **Database:** Upstash Redis (env vars `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` in Railway)
 - **AI:** `ANTHROPIC_API_KEY` in Railway — Director + deck generator use real Claude when set
 
@@ -47,10 +50,19 @@ React frontend (Vite, TypeScript, no UI library — all inline styles matching `
 
 ## Pending work
 
-See `DESIGN_REQUESTS.md` for the full list. Currently pending:
+Product / landing page (see `docs/showcase-plan.md` for detail):
+- **Contact link** — closing CTA on the landing page still points at GitHub; swap in Andrew's contact/resume link when he has it
+- **Domain** — buy one, make the landing page the site root, move the player app to `/play` (keep `?demo`, `?host`, `?admin`, `?join=` working)
+- **Open Graph image + meta tags** so the link previews well in texts/LinkedIn
+- **Product analytics** (e.g. PostHog) on the landing page + app; event list in `docs/showcase-plan.md` §7
+- **Root `README.md`** — still describes a backend-only repo; rewrite as a showcase README
+- **Admin setup** — `ADMIN_KEY` in Railway should be 12+ characters for the admin page to list waitlist emails
 
+App (from `DESIGN_REQUESTS.md`):
 - **Killer task feedback + countdown** (`frontend/src/screens/cold.tsx`) — after a killer completes a task, show a brief "logged" confirmation on the task row and a "town notified in ~X min" countdown. Should feel tense, not clinical.
 - **Unified host-as-player flow** — host should be able to create a game and join as a real player in one flow (no separate `?host` tab). After creating, enter name → auto-join → player view. A discreet lock icon on the home screen → password → host dashboard overlay. Not yet built.
+
+Ideas backlog: `docs/brain-dump.md` (App Store path, monetization, cost estimates).
 
 ## Known bugs fixed recently
 
@@ -59,9 +71,8 @@ See `DESIGN_REQUESTS.md` for the full list. Currently pending:
 
 ## Admin page
 
-- URL: `yourvercelurl/?admin`. The password is whatever `ADMIN_KEY` is set to in Railway; the server checks it, nothing secret lives in the frontend.
-- The old key appeared in public files, so `/admin/waitlist` hides email addresses until `ADMIN_KEY` is changed (see `PUBLIC_ADMIN_KEYS` in `src/server/http.ts`). The signup count still shows.
-- Shows the landing-page waitlist (count + emails) and all games in Redis grouped by phase (active / lobby / finished)
+- URL: `yourvercelurl/?admin`. The password is the `ADMIN_KEY` env var in Railway; the server checks it.
+- Shows the landing-page waitlist (count, plus the email list when `ADMIN_KEY` is 12+ characters) and all games in Redis grouped by phase (active / lobby / finished)
 - Per-game delete + bulk "delete all dead games" button
 - Frontend: `frontend/src/screens/admin.tsx`
 - Backend: `GET /admin/games`, `POST /admin/games/:id/delete`, `GET /admin/waitlist` in `src/server/http.ts`
@@ -84,7 +95,7 @@ cd frontend && npm run build      # production build
 
 # Backend
 npm run serve      # local server (port 3000)
-npm test           # run all 80 tests
+npm test           # run all tests (95)
 npm run sim        # balance simulation
 npm run typecheck  # type check
 ```
@@ -92,6 +103,6 @@ npm run typecheck  # type check
 ## How to pick up next session
 
 1. Read this file
-2. Check `DESIGN_REQUESTS.md` for pending UI work
-3. Check `git log --oneline -10` to see what was done recently
+2. Skim `docs/README.md`, then `DESIGN_REQUESTS.md` for pending UI work
+3. Check `git log --oneline -10` and recent merged PRs to see what was done recently
 4. Ask the user what they want to work on — they often switch context fast

@@ -14,8 +14,8 @@ import type { GameService } from "../service/gameService.js";
 import { InMemoryStore } from "../persistence/store.js";
 import { RateLimiter, Waitlist, type WaitlistEntry } from "../waitlist/waitlist.js";
 
-/** Admin keys that have appeared in public files. Waitlist emails stay hidden until ADMIN_KEY is changed. */
-const PUBLIC_ADMIN_KEYS = new Set(["tiniryno"]);
+/** Waitlist email addresses are only returned when ADMIN_KEY is at least this long. */
+const MIN_KEY_LENGTH_FOR_EMAILS = 12;
 
 /** Serialize async work per key (one in-flight op per game id). */
 class KeyedMutex {
@@ -92,13 +92,13 @@ export function createServer(
         if (!expectedKey || adminKey !== expectedKey) {
           return send(res, 403, { ok: false, error: "forbidden" });
         }
-        // GET /admin/waitlist — signup count, plus the addresses once ADMIN_KEY is private
+        // GET /admin/waitlist — signup count, plus the addresses when ADMIN_KEY is long enough
         if (seg[1] === "waitlist" && ctx.method === "GET") {
           const count = await waitlist.count();
-          if (PUBLIC_ADMIN_KEYS.has(expectedKey)) {
+          if (expectedKey.length < MIN_KEY_LENGTH_FOR_EMAILS) {
             return send(res, 200, {
               ok: true, count, entries: null,
-              locked: "Email addresses are hidden until ADMIN_KEY is changed in Railway (the current one is public).",
+              locked: `To see email addresses, set ADMIN_KEY in Railway to ${MIN_KEY_LENGTH_FOR_EMAILS}+ characters.`,
             });
           }
           return send(res, 200, { ok: true, count, entries: await waitlist.entries() });
