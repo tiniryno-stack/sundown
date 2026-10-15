@@ -1,0 +1,176 @@
+/* Live phone demos on the landing page (src/showcase/*).
+   The device is drawn at true size (414×868 incl. bezel; 390×844 screen) and
+   scaled with --s, so the real app inside renders pixel-for-pixel. */
+
+/* ── device ───────────────────────────────────────────── */
+.pf { --s: 0.74; position: relative; flex: none; width: calc(414px * var(--s)); height: calc(868px * var(--s)); }
+.pf-device {
+  position: absolute; top: 0; left: 0; width: 414px; height: 868px; padding: 12px;
+  border-radius: 62px; background: #111113;
+  transform: scale(var(--s)); transform-origin: 0 0;
+  box-shadow:
+    inset 0 0 0 1.5px #44423f,
+    inset 0 0 0 4px #111113,
+    0 60px 90px -40px rgba(26, 23, 20, 0.5),
+    0 30px 50px -30px rgba(26, 23, 20, 0.35);
+}
+.pf-btn { position: absolute; width: 4px; border-radius: 2px; background: #2c2b29; }
+.pf-btn-a { left: -3px; top: 150px; height: 32px; }
+.pf-btn-b { left: -3px; top: 204px; height: 62px; }
+.pf-btn-c { right: -3px; top: 226px; height: 96px; }
+.pf-screen {
+  position: relative; width: 390px; height: 844px; border-radius: 50px; overflow: hidden;
+  transform: translateZ(0); /* contains the app's position:fixed sheets inside the phone */
+  isolation: isolate;
+  text-align: left; /* don't inherit the hero's centered text on small screens */
+}
+.pf-light { background: #F6F6F4; color: #14161A; }
+.pf-dark { background: #0B0C0E; color: #ECEEF1; }
+.pf-screen > .sd-root { max-width: none; height: 100%; }
+
+.pf-status {
+  position: absolute; top: 0; left: 0; right: 0; height: 54px; padding: 4px 30px 0 46px;
+  display: flex; align-items: center; justify-content: space-between; z-index: 70; pointer-events: none;
+  font: 600 16.5px/1 'Geist', system-ui, sans-serif; letter-spacing: -0.01em; font-variant-numeric: tabular-nums;
+}
+.pf-icons { display: flex; align-items: center; gap: 6px; }
+.pf-icons svg { fill: currentColor; }
+.pf-island { position: absolute; top: 11px; left: 50%; width: 122px; height: 35px; margin-left: -61px; border-radius: 20px; background: #000; z-index: 80; }
+.pf-homebar { position: absolute; bottom: 8px; left: 50%; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: currentColor; opacity: 0.8; z-index: 70; pointer-events: none; }
+.pf-shield { position: absolute; inset: 0; z-index: 90; }
+
+/* finger tap */
+.pf-tap {
+  position: absolute; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%;
+  background: rgba(120, 120, 128, 0.3); border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2); z-index: 85; pointer-events: none;
+  animation: pf-tap 0.75s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes pf-tap {
+  0% { transform: scale(0.4); opacity: 0; }
+  22% { transform: scale(0.92); opacity: 1; }
+  45% { transform: scale(0.78); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* lock-screen style notification */
+.pf-push {
+  position: absolute; top: 56px; left: 10px; right: 10px; z-index: 75;
+  display: flex; gap: 12px; align-items: flex-start; padding: 13px 15px 14px; border-radius: 24px;
+  background: rgba(250, 250, 248, 0.86); color: #14161A;
+  -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  font-family: 'Geist', system-ui, sans-serif;
+  animation: pf-push 3.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.pf-dark .pf-push { background: rgba(44, 46, 52, 0.86); color: #ECEEF1; }
+.pf-push-icon { flex: none; width: 38px; height: 38px; border-radius: 10px; background: radial-gradient(circle at 50% 62%, #F2B652 0 26%, #C9772E 48%, #3A2416 100%); }
+.pf-push-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.pf-push-head { display: flex; justify-content: space-between; font-size: 14px; }
+.pf-push-head b { font-weight: 700; }
+.pf-push-head span { font-size: 13px; opacity: 0.55; }
+.pf-push-msg { font-size: 14.5px; line-height: 1.32; }
+@keyframes pf-push {
+  0% { transform: translateY(-140%); }
+  10% { transform: translateY(0); }
+  86% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-140%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-tap { animation-duration: 0.01s; }
+  .pf-push { animation: none; }
+}
+
+/* ── hero (copy left, phone right) ────────────────────── */
+.sd-landing .hero2 { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 64px; padding: 28px 0 84px; }
+.sd-landing .hero2-copy { max-width: 580px; }
+.sd-landing .hero2 h1 { font-size: clamp(40px, 5.4vw, 68px); font-weight: 800; letter-spacing: -0.04em; line-height: 1.0; text-wrap: balance; }
+.sd-landing .hero2 .sub { margin-top: 22px; max-width: 470px; font-size: 18px; line-height: 1.55; color: #6A635A; text-wrap: pretty; }
+.sd-landing .hero2 .cta-row { justify-content: flex-start; }
+.sd-landing .btn { cursor: pointer; font-family: inherit; }
+.sd-landing button.btn-primary { border: 0; }
+.sd-landing .btn:focus-visible, .sd-landing .demo-btn:focus-visible, .sd-landing .seg button:focus-visible { outline: 2px solid #C9772E; outline-offset: 3px; }
+.sd-landing .hero-facts { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: 'Geist Mono', monospace; font-size: 11.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8A8278; }
+
+.sd-landing .hero-demo { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.sd-landing .hero-phone { --s: 0.74; }
+
+.sd-landing .demo-cap { width: min(100%, 320px); display: flex; flex-direction: column; gap: 10px; }
+.sd-landing .demo-cap-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.sd-landing .demo-clock { font-size: 13px; font-weight: 600; color: #1A1714; font-variant-numeric: tabular-nums; }
+.sd-landing .demo-tag { display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8A8278; }
+.sd-landing .demo-dot { width: 6px; height: 6px; border-radius: 50%; background: #C9772E; animation: demo-pulse 2s ease-in-out infinite; }
+@keyframes demo-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.sd-landing .demo-text { font-size: 15px; line-height: 1.45; color: #453F38; min-height: calc(1.45em * 3); text-wrap: pretty; }
+.sd-landing .demo-bar { height: 2px; border-radius: 2px; background: #DAD5CB; overflow: hidden; }
+.sd-landing .demo-bar > div { height: 100%; background: #C9772E; transform-origin: 0 50%; transform: scaleX(0); }
+.sd-landing .demo-btn {
+  align-self: flex-start; height: 40px; padding: 0 18px; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid #1A1714; background: transparent; color: #1A1714;
+  font: 700 14px/1 'Geist', system-ui, sans-serif; margin-top: 4px;
+}
+.sd-landing .demo-btn:hover { background: #1A1714; color: #F1EEE8; }
+.sd-landing .demo-btn.ghost { border-color: #DAD5CB; }
+.sd-landing .demo-btn.light { align-self: center; border-color: rgba(241, 238, 232, 0.4); color: #F1EEE8; margin-top: 20px; }
+.sd-landing .demo-btn.light:hover { background: #F1EEE8; color: #1A1714; }
+.sd-landing .seg { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: #E6E1D8; }
+.sd-landing .seg button { flex: 1; height: 36px; border: 0; border-radius: 999px; background: transparent; cursor: pointer; font: 600 13.5px/1 'Geist', system-ui, sans-serif; color: #6A635A; }
+.sd-landing .seg button.on { background: #FFFFFF; color: #1A1714; box-shadow: 0 1px 4px rgba(26, 23, 20, 0.12); }
+
+/* ── trio band (dusk) ─────────────────────────────────── */
+.sd-landing .trio { background: linear-gradient(180deg, #1C1815 0%, #100E0C 100%); color: #F1EEE8; padding: 92px 0 100px; overflow: hidden; }
+.sd-landing .trio .kicker { color: #E3A35F; }
+.sd-landing .trio-head { max-width: 660px; margin: 0 auto; text-align: center; }
+.sd-landing .trio-head h2 { font-size: clamp(30px, 4.6vw, 48px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance; }
+.sd-landing .trio-head p { margin-top: 16px; font-size: 17px; line-height: 1.55; color: rgba(241, 238, 232, 0.66); text-wrap: pretty; }
+.sd-landing .trio-cap { max-width: 620px; margin: 44px auto 48px; text-align: center; }
+.sd-landing .trio-clock { font-size: 30px; font-weight: 600; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.sd-landing .trio-cap p { margin-top: 10px; font-size: 17px; line-height: 1.5; color: rgba(241, 238, 232, 0.84); min-height: 3em; text-wrap: balance; }
+.sd-landing .trio-bar { position: relative; max-width: 520px; height: 2px; margin: 22px auto 0; border-radius: 2px; background: rgba(241, 238, 232, 0.14); }
+.sd-landing .trio-fill { position: absolute; inset: 0; background: #E3A35F; transform-origin: 0 50%; transform: scaleX(0); }
+.sd-landing .trio-tick { position: absolute; top: -3px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #2A2420; border: 1.5px solid rgba(241, 238, 232, 0.3); transition: background-color 0.3s, border-color 0.3s; }
+.sd-landing .trio-tick.on { background: #E3A35F; border-color: #E3A35F; }
+
+.sd-landing .trio-row { display: flex; justify-content: center; gap: 44px; padding: 0 24px; }
+.sd-landing .trio-item { display: flex; flex-direction: column; align-items: center; gap: 18px; transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease; }
+.sd-landing .trio-item.is-dim { opacity: 0.5; filter: saturate(0.5); transform: scale(0.98); }
+.sd-landing .trio-phone { --s: 0.62; }
+.sd-landing .trio .pf-device { box-shadow: inset 0 0 0 1.5px #4a4743, inset 0 0 0 4px #111113, 0 50px 80px -30px rgba(0, 0, 0, 0.7); }
+.sd-landing .trio-item figcaption { display: flex; align-items: center; gap: 10px; }
+.sd-landing .trio-name { font-size: 16px; font-weight: 700; }
+.sd-landing .trio-role { padding: 4px 10px; border-radius: 999px; border: 1px solid; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.sd-landing .trio-role.tone-town { color: rgba(241, 238, 232, 0.82); border-color: rgba(241, 238, 232, 0.28); }
+.sd-landing .trio-role.tone-killer { color: #F0564B; border-color: rgba(240, 86, 75, 0.55); background: rgba(240, 86, 75, 0.1); }
+.sd-landing .trio-role.tone-ghost { color: #E3A35F; border-color: rgba(227, 163, 95, 0.5); border-style: dashed; }
+
+/* ── responsive ───────────────────────────────────────── */
+@media (max-width: 1080px) {
+  .sd-landing .trio-phone { --s: 0.54; }
+  .sd-landing .trio-row { gap: 28px; }
+}
+@media (max-width: 940px) {
+  .sd-landing .hero2 { grid-template-columns: 1fr; gap: 44px; padding: 20px 0 64px; text-align: center; }
+  .sd-landing .hero2-copy { margin: 0 auto; }
+  .sd-landing .hero2 .sub { margin-left: auto; margin-right: auto; }
+  .sd-landing .hero2 .cta-row, .sd-landing .hero-facts { justify-content: center; }
+  .sd-landing .hero-phone { --s: 0.7; }
+}
+@media (max-width: 820px) {
+  .sd-landing .trio { padding: 64px 0 72px; }
+  .sd-landing .trio-cap { margin: 32px auto 36px; }
+  .sd-landing .trio-clock { font-size: 24px; }
+  .sd-landing .trio-cap p { font-size: 16px; min-height: 4.5em; }
+  .sd-landing .trio-row {
+    justify-content: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px;
+    padding: 4px max(16px, calc(50% - 141px)) 12px; scrollbar-width: none;
+  }
+  .sd-landing .trio-row::-webkit-scrollbar { display: none; }
+  .sd-landing .trio-item { scroll-snap-align: center; }
+  .sd-landing .trio-phone { --s: 0.68; }
+  .sd-landing .trio-item.is-dim { opacity: 0.55; }
+}
+@media (max-width: 380px) {
+  .sd-landing .hero-phone { --s: 0.66; }
+  .sd-landing .trio-phone { --s: 0.62; }
+}

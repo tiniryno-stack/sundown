@@ -3,7 +3,7 @@
    the prototype's window globals. Visuals (inline styles + theme.css tokens) are
    preserved verbatim so the look stays pixel-accurate. */
 
-import { type CSSProperties, type ReactElement, type ReactNode } from "react";
+import { createContext, useContext, type CSSProperties, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { Band, FeedEvent, PublicPlayer } from "../types";
 
@@ -379,8 +379,14 @@ export function LivingMini({ players, onOpen }: { players: PublicPlayer[]; onOpe
   );
 }
 
+/* ── Portal target — where Sheets mount. Defaults to document.body (the live
+   app). The landing page's phone mockups provide an element inside the phone
+   so sheets open inside the device instead of over the whole page. ── */
+export const PortalTargetContext = createContext<HTMLElement | null>(null);
+
 /* ── Sheet — bottom-sheet drawer scaffold ── */
 export function Sheet({ children, onClose }: { children: ReactNode; onClose: () => void; tone?: string }) {
+  const target = useContext(PortalTargetContext);
   return createPortal(
     <div className="sd-fade" onClick={onClose} style={{
       position: "fixed", inset: 0, zIndex: 50,
@@ -402,7 +408,7 @@ export function Sheet({ children, onClose }: { children: ReactNode; onClose: () 
         {children}
       </div>
     </div>,
-    document.body,
+    target ?? document.body,
   );
 }
 

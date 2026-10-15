@@ -93,7 +93,7 @@ function BackBar({ label, onBack }: { label: string; onBack: () => void }) {
 /* ── the active-game shell: home/tasks tabs + pushed tools/vote/result ── */
 type Pushed = "tools" | "vote" | "result" | null;
 
-function ActiveShell({
+export function ActiveShell({
   view, theme, toggleTheme, dark, tasks, suggestions, actions, reveal, demo, onLeave,
 }: {
   view: PlayerView;
@@ -189,7 +189,7 @@ function HomePlaceholder() {
 }
 
 /* ── actions surface (the only thing that differs live vs demo) ── */
-type Actions = {
+export type Actions = {
   completeTask: (task: Task, answer: string | null, involvedPlayerIds?: string[]) => void;
   rateTask: (taskPrompt: string, rating: "up" | "down") => void;
   castVote: (targetId: string) => void;
