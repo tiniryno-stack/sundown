@@ -107,6 +107,14 @@ export const api = {
   getKillContext: (gameId: string, playerId: string, token: string) =>
     get<KillContext>(`/games/${gameId}/killer/context`, { playerId, token }),
 
+  // ── Waitlist (landing page) ─────────────────────────────────────
+  joinWaitlist: (email: string, source: string, company = "") =>
+    post<{ ok: true; already: boolean }>("/waitlist", { email, source, company }),
+
+  getAdminWaitlist: (adminKey: string) =>
+    get<{ ok: true; count: number; entries: { email: string; at: string; source: string }[] | null; locked?: string }>(
+      "/admin/waitlist", { adminKey }),
+
   // ── Admin ───────────────────────────────────────────────────────
   getAdminGames: (adminKey: string) =>
     get<{ ok: true; games: AdminGameSummary[] }>("/admin/games", { adminKey }),

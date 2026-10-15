@@ -59,12 +59,20 @@ See `DESIGN_REQUESTS.md` for the full list. Currently pending:
 
 ## Admin page
 
-- URL: `yourvercelurl/?admin` — password: `tiniryno`
-- Shows all games in Redis grouped by phase (active / lobby / finished)
+- URL: `yourvercelurl/?admin`. The password is whatever `ADMIN_KEY` is set to in Railway; the server checks it, nothing secret lives in the frontend.
+- The old key appeared in public files, so `/admin/waitlist` hides email addresses until `ADMIN_KEY` is changed (see `PUBLIC_ADMIN_KEYS` in `src/server/http.ts`). The signup count still shows.
+- Shows the landing-page waitlist (count + emails) and all games in Redis grouped by phase (active / lobby / finished)
 - Per-game delete + bulk "delete all dead games" button
-- Requires `ADMIN_KEY=tiniryno` set in Railway env vars (backend validates server-side)
 - Frontend: `frontend/src/screens/admin.tsx`
-- Backend: `GET /admin/games` + `POST /admin/games/:id/delete` in `src/server/http.ts`
+- Backend: `GET /admin/games`, `POST /admin/games/:id/delete`, `GET /admin/waitlist` in `src/server/http.ts`
+
+## Landing page (`?landing`)
+
+- `frontend/src/screens/landing.tsx` + `frontend/src/showcase/*`
+- Hero and "three phones" demos drive the REAL app screens from a script (`showcase/story.ts`); no screenshots or video
+- "How to play" reuses the in-app tutorial (`TUTORIAL_SLIDES` in `screens/cozy.tsx`) and `BAR_COPY`, so page and app can't disagree
+- Waitlist: `POST /waitlist` stores emails in Redis under `sundown:waitlist:*` (no emails are ever sent). Rate-limited, honeypot field, deduped.
+- `cd frontend && node scripts/build-showcase.mjs` builds the landing page alone into one HTML file for previews
 
 ## Commands
 

@@ -981,7 +981,8 @@ export function VoteResultScreen({ view }: { view: PlayerView }) {
 }
 
 /* ── TUTORIAL ── a short paged primer between the lobby and the day ── */
-const TUTORIAL_SLIDES = [
+/** The in-app tutorial cards. Also shown on the landing page's How to play section. */
+export const TUTORIAL_SLIDES = [
   { icon: "spark", tone: "var(--accent)", eyebrow: "How this works", title: "An all-day game of trust",
     body: "A few of you are secretly killers. Everyone else is trying to name them before sundown. You keep living your normal day — the game just runs quietly underneath it." },
   { icon: "alert", tone: "var(--warn)", eyebrow: "The mood of the day", title: "Read the room, not a number",
