@@ -10,7 +10,7 @@ function dispatch(phone: PhoneHandle | null | undefined, c: Cmd) {
   if (!phone) return;
   if (c.scene) phone.scene(c.scene);
   if (c.push) phone.push(c.push);
-  if (c.tap) phone.tap(c.tap);
+  if (c.tap) phone.tap(c.tap, c.dwell);
 }
 
 export function useDirector(

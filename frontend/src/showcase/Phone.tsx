@@ -20,7 +20,7 @@ import { REVEAL, type Scene } from "./story";
 
 export type PhoneHandle = {
   scene: (s: Scene) => void;
-  tap: (text: string) => void;
+  tap: (text: string, dwell?: number) => void;
   push: (msg: string) => void;
 };
 
@@ -84,6 +84,24 @@ function findByText(root: HTMLElement, text: string): HTMLElement | null {
   return fallback;
 }
 
+/** Scroll an element with an ease-in-out curve (browser smooth scroll is abrupt and inconsistent). */
+function easeScroll(el: HTMLElement, to: number, ms: number): Promise<void> {
+  const from = el.scrollTop;
+  const max = el.scrollHeight - el.clientHeight;
+  const end = Math.max(0, Math.min(max, to));
+  if (Math.abs(end - from) < 2) return Promise.resolve();
+  return new Promise((done) => {
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const p = Math.min(1, (now - t0) / ms);
+      const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      el.scrollTop = from + (end - from) * e;
+      if (p < 1) requestAnimationFrame(step); else done();
+    };
+    requestAnimationFrame(step);
+  });
+}
+
 function scrollParent(el: HTMLElement, stop: HTMLElement): HTMLElement | null {
   for (let p = el.parentElement; p && p !== stop; p = p.parentElement) {
     const oy = getComputedStyle(p).overflowY;
@@ -104,7 +122,7 @@ export const AutoPhone = forwardRef<PhoneHandle, {
   const [scene, setScene] = useState<Scene>(initial);
   const [epoch, setEpoch] = useState(0);
   const [pushes, setPushes] = useState<{ id: number; msg: string }[]>([]);
-  const [taps, setTaps] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [taps, setTaps] = useState<{ id: number; x: number; y: number; press: boolean }[]>([]);
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<HTMLDivElement>(null);
@@ -119,7 +137,9 @@ export const AutoPhone = forwardRef<PhoneHandle, {
     setTimeout(() => { if (alive.current) fn(); }, ms);
   }, []);
 
-  const tap = useCallback(async (text: string) => {
+  /* Tap like a person would: scroll the target into view (eased), rest a finger on
+     it long enough to read, press, then click the real control. */
+  const tap = useCallback(async (text: string, dwell = 650) => {
     const screen = screenRef.current, app = appRef.current;
     if (!screen || !app) return;
     const hit = findByText(app, text);
@@ -134,8 +154,8 @@ export const AutoPhone = forwardRef<PhoneHandle, {
       const topGap = (tr.top - sr.top) / scale, bottomGap = (sr.bottom - tr.bottom) / scale;
       if (topGap < 90 || bottomGap < 130) {
         const delta = topGap < 90 ? topGap - 140 : (tr.height / scale) - bottomGap + 160;
-        scroller.scrollTo({ top: scroller.scrollTop + delta, behavior: "smooth" });
-        await wait(450);
+        await easeScroll(scroller, scroller.scrollTop + delta, 650);
+        await wait(120);
         if (!alive.current) return;
       }
     }
@@ -144,16 +164,19 @@ export const AutoPhone = forwardRef<PhoneHandle, {
     const x = (r.left + r.width / 2 - sr.left) / scale;
     const y = (r.top + r.height / 2 - sr.top) / scale;
     const id = ++uid.current;
-    setTaps((t) => [...t, { id, x, y }]);
-    later(800, () => setTaps((t) => t.filter((p) => p.id !== id)));
+    setTaps((t) => [...t, { id, x, y, press: false }]);
 
-    await wait(170);
+    await wait(dwell); // finger rests on the control
     if (!alive.current) return;
-    const prev = target.style.transform;
+    setTaps((t) => t.map((p) => (p.id === id ? { ...p, press: true } : p)));
+    const prevT = target.style.transform, prevTr = target.style.transition;
+    target.style.transition = "transform .16s cubic-bezier(.2,.7,.3,1)";
     target.style.transform = "scale(0.97)";
-    await wait(120);
-    target.style.transform = prev;
+    await wait(170);
+    target.style.transform = prevT;
+    later(200, () => { target.style.transition = prevTr; });
     target.click();
+    later(650, () => setTaps((t) => t.filter((p) => p.id !== id)));
   }, [later]);
 
   useImperativeHandle(ref, () => ({
@@ -161,11 +184,11 @@ export const AutoPhone = forwardRef<PhoneHandle, {
       setScene(s);
       if (s.fresh) setEpoch((e) => e + 1);
     },
-    tap(text) { void tap(text); },
+    tap(text, dwell) { void tap(text, dwell); },
     push(msg) {
       const id = ++uid.current;
       setPushes((p) => [...p.slice(-1), { id, msg }]);
-      later(3600, () => setPushes((p) => p.filter((x) => x.id !== id)));
+      later(4200, () => setPushes((p) => p.filter((x) => x.id !== id)));
     },
   }), [tap, later]);
 
@@ -176,11 +199,14 @@ export const AutoPhone = forwardRef<PhoneHandle, {
     <PhoneFrame theme={theme} time={time} screenRef={screenRef} className={className} style={style}>
       <div className="sd-root" data-theme={theme} ref={appRef} aria-label={label}>
         <PortalTargetContext.Provider value={portalEl}>
-          {scene.mode === "lobby"
-            ? <LobbyScreen key={`l${epoch}`} view={scene.view} />
-            : <ActiveShell key={`s${epoch}`} view={scene.view} theme={theme} toggleTheme={noop} dark={dark}
-                tasks={DEMO_TASKS} suggestions={scene.view.you.killer && !scene.view.you.isGhost ? DEMO_KILL_SUGGESTIONS : []}
-                actions={NOOP} reveal={REVEAL} demo />}
+          {/* keyed wrapper: a fresh scene (new loop, new role) cross-fades in */}
+          <div key={`${scene.mode}${epoch}`} className="pf-app">
+            {scene.mode === "lobby"
+              ? <LobbyScreen view={scene.view} />
+              : <ActiveShell view={scene.view} theme={theme} toggleTheme={noop} dark={dark}
+                  tasks={DEMO_TASKS} suggestions={scene.view.you.killer && !scene.view.you.isGhost ? DEMO_KILL_SUGGESTIONS : []}
+                  actions={NOOP} reveal={REVEAL} demo />}
+          </div>
         </PortalTargetContext.Provider>
         <div ref={setPortalEl} />
       </div>
@@ -193,7 +219,7 @@ export const AutoPhone = forwardRef<PhoneHandle, {
           </span>
         </div>
       ))}
-      {taps.map((t) => <span key={t.id} className="pf-tap" style={{ left: t.x, top: t.y }} />)}
+      {taps.map((t) => <span key={t.id} className={`pf-finger${t.press ? " press" : ""}`} style={{ left: t.x, top: t.y }} />)}
       {!interactive && <div className="pf-shield" aria-hidden="true" />}
     </PhoneFrame>
   );
