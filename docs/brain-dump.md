@@ -69,6 +69,7 @@ _(filled in as we go)_
 ### Ideas on the table
 - **Showcase / landing site** (Oct 14): full plan in [`showcase-plan.md`](showcase-plan.md). Domain + landing at root, app at `/play`, live phone-frame demo, PM-framed case study, waitlist + PostHog.
 
+- **Game modes** (Oct 15): make the app an all-day task engine with several games on top (Task Mafia, Taskmaster, Task Teams, Secret Targets). Brainstorm + feedback log in [`game-modes.md`](game-modes.md).
 - **Waitlist** (Oct 15): shipped. Emails only, no campaigns; the count is the signal of interest.
 - **How to play on the landing page** (Oct 15): shipped, reusing the app's own tutorial cards.
 

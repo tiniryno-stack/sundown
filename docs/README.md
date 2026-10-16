@@ -5,6 +5,7 @@ Product notes that sit alongside the code. Technical source-of-truth docs live a
 | Doc | What's in it |
 |---|---|
 | [`brain-dump.md`](brain-dump.md) | Running product notes: project status, launch cost estimates, monetization ideas, decisions made, ideas on the table |
+| [`game-modes.md`](game-modes.md) | Brainstorm: turning Sundown into a task engine with several modes (Task Mafia, Taskmaster, Task Teams, Secret Targets), plus a log of first-impression feedback |
 | [`showcase-plan.md`](showcase-plan.md) | The landing page plan: audiences, structure, the self-playing demo approach, case-study content, waitlist + analytics, what's shipped and what's next |
 
 At the repo root:
