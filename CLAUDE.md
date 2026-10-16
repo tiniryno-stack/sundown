@@ -62,7 +62,7 @@ App (from `DESIGN_REQUESTS.md`):
 - **Killer task feedback + countdown** (`frontend/src/screens/cold.tsx`) — after a killer completes a task, show a brief "logged" confirmation on the task row and a "town notified in ~X min" countdown. Should feel tense, not clinical.
 - **Unified host-as-player flow** — host should be able to create a game and join as a real player in one flow (no separate `?host` tab). After creating, enter name → auto-join → player view. A discreet lock icon on the home screen → password → host dashboard overlay. Not yet built.
 
-Ideas backlog: `docs/brain-dump.md` (App Store path, monetization, cost estimates).
+Ideas backlog: `docs/brain-dump.md` (App Store path, monetization, cost estimates) and `docs/game-modes.md` (more game modes on the same task engine, plus a first-impressions feedback log).
 
 ## Known bugs fixed recently
 
